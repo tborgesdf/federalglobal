@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { validateDomainAccess, getDomainContext } from '../../../../lib/utils/domain'
+import { getDomainContext } from '../../../../lib/utils/domain'
 import { logAction } from '../../../../lib/utils/logger'
-import bcrypt from 'bcryptjs'
 
 interface LoginRequest {
   cpf: string
@@ -48,15 +47,12 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Determinar tipo de usuário baseado no domínio
-    let userType: 'admin' | 'client' | 'user'
+    // Determinar permissões baseado no domínio
     let requiredRole: string[]
 
     if (domainContext.isAdmin) {
-      userType = 'admin'
       requiredRole = ['admin', 'super_admin']
     } else {
-      userType = 'client'
       requiredRole = ['user', 'client', 'employee']
     }
 

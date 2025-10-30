@@ -12,7 +12,9 @@ export default function DomainRouter({ children }: DomainRouterProps) {
   const [domainType, setDomainType] = useState<'admin' | 'client' | 'unknown'>('unknown')
 
   useEffect(() => {
-    if (typeof window !== 'undefined') {
+    const detectAndSetDomain = () => {
+      if (typeof window === 'undefined') return;
+      
       const hostname = window.location.hostname
       const pathname = window.location.pathname
       
@@ -25,28 +27,46 @@ export default function DomainRouter({ children }: DomainRouterProps) {
       
       console.log(`[DomainRouter] Host: ${hostname}, Path: ${pathname}, Admin: ${isAdmin}, Client: ${isClient}`)
       
+      // Usar callback form do setState para evitar cascading renders
       if (isAdmin) {
-        setDomainType('admin')
-        // Redirecionar para área admin se necessário
-        if (!pathname.startsWith('/admin')) {
-          router.push('/admin')
-        }
+        setDomainType(prev => {
+          if (prev !== 'admin') {
+            // Redirecionar para área admin se necessário
+            if (!pathname.startsWith('/admin')) {
+              router.push('/admin')
+            }
+            return 'admin'
+          }
+          return prev
+        })
       } else if (isClient) {
-        setDomainType('client')
-        // Redirecionar para área cliente se necessário
-        if (pathname.startsWith('/admin')) {
-          router.push('/client')
-        } else if (pathname === '/' || pathname === '') {
-          router.push('/client')
-        }
+        setDomainType(prev => {
+          if (prev !== 'client') {
+            // Redirecionar para área cliente se necessário
+            if (pathname.startsWith('/admin')) {
+              router.push('/client')
+            } else if (pathname === '/' || pathname === '') {
+              router.push('/client')
+            }
+            return 'client'
+          }
+          return prev
+        })
       } else {
         // Domínio local ou desenvolvimento - redirecionar para cliente por padrão
-        setDomainType('client')
-        if (pathname === '/' || pathname === '') {
-          router.push('/client')
-        }
+        setDomainType(prev => {
+          if (prev !== 'client') {
+            if (pathname === '/' || pathname === '') {
+              router.push('/client')
+            }
+            return 'client'
+          }
+          return prev
+        })
       }
     }
+
+    detectAndSetDomain()
   }, [router])
 
   // Mostrar loading enquanto determina o tipo de domínio

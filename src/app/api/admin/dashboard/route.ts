@@ -11,7 +11,7 @@ export async function GET(request: NextRequest) {
         details: { 
           hostname: request.headers.get('host'),
           userAgent: request.headers.get('user-agent'),
-          ip: request.ip || 'unknown'
+          ip: request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip') || 'unknown'
         },
         status: 'error'
       })
