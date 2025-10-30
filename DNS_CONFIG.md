@@ -1,54 +1,64 @@
-# Configuração de Domínio - Federal Global by DeltaFox
+﻿# ConfiguraÃ§Ã£o de DomÃ­nio - Federal Global by DeltaFox
 
-## Domínio Principal
+## DomÃ­nios do Sistema
 
+### DomÃ­nio Principal (Cliente):
 federalglobal.deltafoxconsult.com.br
 
-## Configuração DNS no Hostgator
+### DomÃ­nio Administrativo (Dashboard):
+admin.federalglobal.deltafoxconsult.com.br
 
-### Registro CNAME
+## ConfiguraÃ§Ã£o DNS no Hostgator
 
-```
+### Registros CNAME NecessÃ¡rios
+
+#### 1. DomÃ­nio Principal (Sistema PÃºblico):
+`
 Nome: federalglobal
 Tipo: CNAME
 TTL: 300 (5 minutos)
-Destino: [URL_ATUAL_DO_VERCEL] (sem https://)
-```
+Destino: federalglobal-hs35seisi-thiago-borges-projects-3ed92125.vercel.app
+`
 
-### Como Configurar Manualmente:
-
-1. **Acesse o painel do Hostgator**
-
-   - Entre na sua conta do Hostgator
-   - Vá para "Gerenciador de DNS" ou "DNS Zone Editor"
-
-2. **Encontre o domínio deltafoxconsult.com.br**
-
-   - Clique em "Gerenciar" ou "Editar"
-
-3. **Adicionar/Editar registro CNAME**
-
-   - Tipo: CNAME
-   - Nome: federalglobal
-   - Destino: federalglobal-[codigo].vercel.app (URL atual sem https://)
-   - TTL: 300
-
-4. **Salvar alterações**
-
-### Verificação:
-
-```bash
-# Testar DNS
-nslookup federalglobal.deltafoxconsult.com.br
-
-# Testar HTTPS
-curl -I https://federalglobal.deltafoxconsult.com.br
-```
+#### 2. DomÃ­nio Administrativo (Dashboard):
+`
+Nome: admin.federalglobal
+Tipo: CNAME
+TTL: 300 (5 minutos)
+Destino: federalglobal-hs35seisi-thiago-borges-projects-3ed92125.vercel.app
+`
 
 ### URL Atual do Vercel:
+https://federalglobal-hs35seisi-thiago-borges-projects-3ed92125.vercel.app
 
-https://federalglobal-fo2kgz1a5-thiago-borges-projects-3ed92125.vercel.app
+### Status dos DomÃ­nios:
+- âœ… Sistema Cliente: federalglobal.deltafoxconsult.com.br
+- âœ… Sistema Admin: admin.federalglobal.deltafoxconsult.com.br
+- âœ… Deploy AutomÃ¡tico: Configurado
+- âœ… DNS AutomÃ¡tico: Configurado
 
-### Última Atualização:
+### Ãšltima AtualizaÃ§Ã£o:
+30/10/2025 19:45 - Deploy automÃ¡tico executado
 
-30/10/2025 - Configuração inicial
+### Comandos de VerificaÃ§Ã£o:
+`ash
+# Testar DNS Cliente
+nslookup federalglobal.deltafoxconsult.com.br
+
+# Testar DNS Admin
+nslookup admin.federalglobal.deltafoxconsult.com.br
+
+# Testar HTTPS Cliente
+curl -I https://federalglobal.deltafoxconsult.com.br
+
+# Testar HTTPS Admin
+curl -I https://admin.federalglobal.deltafoxconsult.com.br
+`
+
+### InstruÃ§Ãµes Manuais (se necessÃ¡rio):
+Se a configuraÃ§Ã£o automÃ¡tica falhou, configure manualmente no cPanel:
+
+1. Acesse o cPanel do Hostgator
+2. VÃ¡ em "Editor de zona DNS"
+3. Selecione "deltafoxconsult.com.br"
+4. Adicione os registros CNAME conforme especificado acima

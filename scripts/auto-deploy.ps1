@@ -1,8 +1,10 @@
 # Script de Deploy Automático - Federal Global by DeltaFox (Windows)
-# Este script atualiza automaticamente o subdomínio federalglobal.deltafoxconsult.com.br
-# para apontar para o último deploy do Vercel
+# Este script gerencia deploy dual para:
+# - federalglobal.deltafoxconsult.com.br (Cliente)
+# - admin.federalglobal.deltafoxconsult.com.br (Dashboard)
 
 Write-Host "🚀 Iniciando deploy automático do Federal Global..." -ForegroundColor Green
+Write-Host "📊 Sistema Dual: Cliente + Admin Dashboard" -ForegroundColor Cyan
 
 # Fazer o deploy no Vercel e capturar a URL
 Write-Host "📦 Fazendo deploy no Vercel..." -ForegroundColor Yellow
@@ -19,12 +21,12 @@ Write-Host "✅ Deploy realizado com sucesso: $NewUrl" -ForegroundColor Green
 # Extrair apenas o hostname (sem https://)
 $Hostname = $NewUrl -replace 'https://', ''
 
-Write-Host "🌐 Atualizando DNS para $Hostname..." -ForegroundColor Yellow
+Write-Host "🌐 Configurando domínios múltiplos..." -ForegroundColor Yellow
 
 # Configuração para API do Hostgator
 # Você precisa configurar essas variáveis com suas credenciais reais
-# $HostgatorApiKey = "sua_api_key_aqui"
-# $HostgatorApiSecret = "seu_api_secret_aqui"
+# $HostgatorApiKey = $env:HOSTGATOR_API_KEY
+# $HostgatorApiSecret = $env:HOSTGATOR_API_SECRET
 
 # Headers para a requisição
 $Headers = @{
@@ -32,44 +34,142 @@ $Headers = @{
     'Content-Type' = 'application/json'
 }
 
-# Dados para atualizar o DNS
-$DnsData = @{
-    domain = "deltafoxconsult.com.br"
-    type = "CNAME"
-    name = "federalglobal"
-    content = $Hostname
-    ttl = 300
-} | ConvertTo-Json
+# Função para atualizar DNS
+function Update-DNS {
+    param (
+        [string]$SubDomain,
+        [string]$Target,
+        [string]$Description
+    )
+    
+    Write-Host "🔄 Atualizando DNS: $SubDomain -> $Target" -ForegroundColor Blue
+    
+    $DnsData = @{
+        domain = "deltafoxconsult.com.br"
+        type = "CNAME"
+        name = $SubDomain
+        content = $Target
+        ttl = 300
+    } | ConvertTo-Json
 
-# Fazer a requisição para atualizar o DNS
-try {
-    Invoke-RestMethod -Uri "https://api.hostgator.com.br/dns/update" -Method POST -Headers $Headers -Body $DnsData
-    Write-Host "✅ DNS atualizado com sucesso!" -ForegroundColor Green
-} catch {
-    Write-Host "⚠️ Aviso: Não foi possível atualizar o DNS automaticamente. Atualize manualmente no painel do Hostgator:" -ForegroundColor Yellow
-    Write-Host "   - Nome: federalglobal" -ForegroundColor White
-    Write-Host "   - Tipo: CNAME" -ForegroundColor White
-    Write-Host "   - Destino: $Hostname" -ForegroundColor White
+    try {
+        Invoke-RestMethod -Uri "https://api.hostgator.com.br/dns/update" -Method POST -Headers $Headers -Body $DnsData
+        Write-Host "✅ $Description atualizado com sucesso!" -ForegroundColor Green
+        return $true
+    } catch {
+        Write-Host "⚠️ Aviso: Não foi possível atualizar $Description automaticamente" -ForegroundColor Yellow
+        Write-Host "   - Nome: $SubDomain" -ForegroundColor White
+        Write-Host "   - Tipo: CNAME" -ForegroundColor White
+        Write-Host "   - Destino: $Target" -ForegroundColor White
+        return $false
+    }
 }
 
-Write-Host "🌐 O site estará disponível em: https://federalglobal.deltafoxconsult.com.br" -ForegroundColor Cyan
-Write-Host "⏰ Aguarde alguns minutos para a propagação do DNS" -ForegroundColor Yellow
+# Atualizar ambos os domínios
+$ClienteOk = Update-DNS -SubDomain "federalglobal" -Target $Hostname -Description "DNS Cliente"
+$AdminOk = Update-DNS -SubDomain "admin.federalglobal" -Target $Hostname -Description "DNS Admin"
 
-# Atualizar arquivo de documentação com a nova URL
+# Configurar domínios no Vercel
+Write-Host "🌐 Configurando domínios no Vercel..." -ForegroundColor Blue
+vercel domains add federalglobal.deltafoxconsult.com.br 2>$null
+vercel domains add admin.federalglobal.deltafoxconsult.com.br 2>$null
+
+# Atualizar arquivo de documentação DNS
+$CurrentDate = Get-Date -Format "dd/MM/yyyy HH:mm"
+$DnsConfigContent = @"
+# Configuração de Domínio - Federal Global by DeltaFox
+
+## Domínios do Sistema
+
+### Domínio Principal (Cliente):
+federalglobal.deltafoxconsult.com.br
+
+### Domínio Administrativo (Dashboard):
+admin.federalglobal.deltafoxconsult.com.br
+
+## Configuração DNS no Hostgator
+
+### Registros CNAME Necessários
+
+#### 1. Domínio Principal (Sistema Público):
+```
+Nome: federalglobal
+Tipo: CNAME
+TTL: 300 (5 minutos)
+Destino: $Hostname
+```
+
+#### 2. Domínio Administrativo (Dashboard):
+```
+Nome: admin.federalglobal
+Tipo: CNAME
+TTL: 300 (5 minutos)
+Destino: $Hostname
+```
+
+### URL Atual do Vercel:
+$NewUrl
+
+### Status dos Domínios:
+- $(if($ClienteOk){"✅"}else{"❌"}) Sistema Cliente: federalglobal.deltafoxconsult.com.br
+- $(if($AdminOk){"✅"}else{"❌"}) Sistema Admin: admin.federalglobal.deltafoxconsult.com.br
+- ✅ Deploy Automático: Configurado
+- $(if($ClienteOk -and $AdminOk){"✅"}else{"⚠️"}) DNS Automático: $(if($ClienteOk -and $AdminOk){"Configurado"}else{"Requer configuração manual"})
+
+### Última Atualização:
+$CurrentDate - Deploy automático executado
+
+### Comandos de Verificação:
+```bash
+# Testar DNS Cliente
+nslookup federalglobal.deltafoxconsult.com.br
+
+# Testar DNS Admin
+nslookup admin.federalglobal.deltafoxconsult.com.br
+
+# Testar HTTPS Cliente
+curl -I https://federalglobal.deltafoxconsult.com.br
+
+# Testar HTTPS Admin
+curl -I https://admin.federalglobal.deltafoxconsult.com.br
+```
+
+### Instruções Manuais (se necessário):
+Se a configuração automática falhou, configure manualmente no cPanel:
+
+1. Acesse o cPanel do Hostgator
+2. Vá em "Editor de zona DNS"
+3. Selecione "deltafoxconsult.com.br"
+4. Adicione os registros CNAME conforme especificado acima
+"@
+
+Set-Content "DNS_CONFIG.md" -Value $DnsConfigContent -Encoding UTF8
+
+# Atualizar arquivo de documentação principal
 $FederalGlobalMd = Get-Content "FEDERAL_GLOBAL.md" -Raw
 $FederalGlobalMd = $FederalGlobalMd -replace 'https://federalglobal-.*?vercel\.app', $NewUrl
 Set-Content "FEDERAL_GLOBAL.md" -Value $FederalGlobalMd
 
 # Fazer commit das mudanças
-git add FEDERAL_GLOBAL.md
-git commit -m "🔄 Atualização automática de deploy: $NewUrl"
+git add .
+git commit -m "🔄 Deploy automático dual: Cliente + Admin | $NewUrl"
 git push origin master
 
 Write-Host "📝 Documentação atualizada e enviada para o GitHub" -ForegroundColor Green
-Write-Host "🎉 Deploy automático concluído!" -ForegroundColor Magenta
 
-# Exibir resumo
+# Exibir resumo final
+Write-Host "`n🎉 Deploy automático concluído!" -ForegroundColor Magenta
 Write-Host "`n📋 Resumo do Deploy:" -ForegroundColor Cyan
 Write-Host "   • Nova URL Vercel: $NewUrl" -ForegroundColor White
-Write-Host "   • Subdomínio: federalglobal.deltafoxconsult.com.br" -ForegroundColor White
-Write-Host "   • Status: Deploy concluído com sucesso" -ForegroundColor White
+Write-Host "   • Sistema Cliente: federalglobal.deltafoxconsult.com.br" -ForegroundColor Blue
+Write-Host "   • Sistema Admin: admin.federalglobal.deltafoxconsult.com.br" -ForegroundColor Red
+Write-Host "   • Status DNS Cliente: $(if($ClienteOk){"✅ OK"}else{"❌ Manual"})" -ForegroundColor White
+Write-Host "   • Status DNS Admin: $(if($AdminOk){"✅ OK"}else{"❌ Manual"})" -ForegroundColor White
+
+Write-Host "`n🌐 URLs Disponíveis:" -ForegroundColor Yellow
+Write-Host "   🔷 Cliente (Público): https://federalglobal.deltafoxconsult.com.br" -ForegroundColor Blue
+Write-Host "   🔶 Admin (Dashboard): https://admin.federalglobal.deltafoxconsult.com.br" -ForegroundColor Red
+Write-Host "   🔸 Vercel (Direto): $NewUrl" -ForegroundColor Gray
+
+Write-Host "`n⏰ Aguarde alguns minutos para a propagação do DNS" -ForegroundColor Yellow
+Write-Host "📖 Consulte DNS_CONFIG.md para instruções detalhadas" -ForegroundColor Cyan
