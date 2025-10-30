@@ -14,15 +14,18 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Limpar CPF removendo formatação
+    const cleanCPF = cpf.replace(/\D/g, '');
+    
     // Verificar login
     let user;
     try {
-      user = await CompanyUserService.verifyLogin(cpf, password);
+      user = await CompanyUserService.verifyLogin(cleanCPF, password);
     } catch (error) {
       console.error('Erro ao verificar login:', error);
       
       // Fallback para teste sem banco - apenas para desenvolvimento
-      if (cpf === '12345678901' && password === 'SuperAdmin2024!') {
+      if (cleanCPF === '12345678901' && password === 'SuperAdmin2024!') {
         user = {
           id: 1,
           cpf: '12345678901',
