@@ -1,0 +1,110 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+// Modelo para usuários do sistema
+model User {
+  id        Int      @id @default(autoincrement())
+  email     String   @unique
+  name      String?
+  password  String
+  role      Role     @default(USER)
+  active    Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relacionamentos
+  reports   Report[]
+  sessions  UserSession[]
+
+  @@map("users")
+}
+
+// Modelo para relatórios de segurança
+model Report {
+  id          Int      @id @default(autoincrement())
+  title       String
+  description String   @db.Text
+  category    Category
+  priority    Priority @default(MEDIUM)
+  status      Status   @default(PENDING)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relacionamentos
+  userId      Int
+  user        User     @relation(fields: [userId], references: [id])
+  attachments Attachment[]
+
+  @@map("reports")
+}
+
+// Modelo para anexos dos relatórios
+model Attachment {
+  id       Int    @id @default(autoincrement())
+  filename String
+  filepath String
+  filesize Int
+  mimetype String
+
+  // Relacionamentos
+  reportId Int
+  report   Report @relation(fields: [reportId], references: [id], onDelete: Cascade)
+
+  @@map("attachments")
+}
+
+// Modelo para sessões de usuário
+model UserSession {
+  id        String   @id
+  userId    Int
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  // Relacionamentos
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("user_sessions")
+}
+
+// Enums
+enum Role {
+  ADMIN
+  MANAGER
+  ANALYST
+  USER
+}
+
+enum Category {
+  INTELLIGENCE
+  COUNTERINTELLIGENCE
+  SECURITY
+  INVESTIGATION
+  COMPLIANCE
+  RISK_ASSESSMENT
+}
+
+enum Priority {
+  LOW
+  MEDIUM
+  HIGH
+  CRITICAL
+}
+
+enum Status {
+  PENDING
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+}
