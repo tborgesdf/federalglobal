@@ -63,7 +63,7 @@ export class SecurityUtils {
   }
 
   // Sanitizar dados para logs
-  static sanitizeForLog(data: any): any {
+  static sanitizeForLog(data: Record<string, unknown>): Record<string, unknown> {
     const sensitiveFields = ['password', 'cpf', 'email', 'phone'];
     const sanitized = { ...data };
     

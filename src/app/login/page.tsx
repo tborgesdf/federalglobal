@@ -1,15 +1,41 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
+import { CaptureUtils } from '@/lib/utils/capture';
 
 export default function LoginPage() {
   const [cpf, setCpf] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [gpsStatus, setGpsStatus] = useState<'checking' | 'enabled' | 'disabled'>('checking');
+  const [gpsCoords, setGpsCoords] = useState<{ lat: number; lng: number } | null>(null);
   const router = useRouter();
+
+  // Verificar GPS ao carregar a página
+  useEffect(() => {
+    checkGPSStatus();
+  }, []);
+
+  const checkGPSStatus = async () => {
+    try {
+      const hasPermission = await CaptureUtils.checkGPSPermission();
+      if (hasPermission) {
+        const coords = await CaptureUtils.getGPSCoordinates();
+        setGpsCoords(coords);
+        setGpsStatus('enabled');
+      } else {
+        setGpsStatus('disabled');
+        setError('🛡️ GPS é obrigatório para utilizar o sistema. Por favor, habilite a localização e recarregue a página.');
+      }
+    } catch (err: unknown) {
+      console.error('Erro ao verificar GPS:', err);
+      setGpsStatus('disabled');
+      setError('🛡️ GPS é obrigatório para utilizar o sistema. Por favor, habilite a localização e recarregue a página.');
+    }
+  };
 
   // Formatar CPF enquanto digita
   const formatCPF = (value: string) => {
@@ -30,13 +56,24 @@ export default function LoginPage() {
     setLoading(true);
     setError('');
 
+    // Verificar se GPS está habilitado antes de permitir login
+    if (gpsStatus !== 'enabled' || !gpsCoords) {
+      setError('🛡️ GPS é obrigatório para acessar o sistema. Por favor, habilite a localização.');
+      setLoading(false);
+      return;
+    }
+
     try {
       const response = await fetch('/api/auth/login', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ cpf, password }),
+        body: JSON.stringify({ 
+          cpf, 
+          password,
+          gpsCoords: gpsCoords // Enviar coordenadas GPS
+        }),
       });
 
       const data = await response.json();
@@ -61,7 +98,8 @@ export default function LoginPage() {
       } else {
         setError(data.error || 'Erro ao fazer login');
       }
-    } catch (err) {
+    } catch (err: unknown) {
+      console.error('Erro de conexão:', err);
       setError('Erro de conexão. Tente novamente.');
     } finally {
       setLoading(false);
@@ -88,9 +126,37 @@ export default function LoginPage() {
 
         {/* Formulário de login */}
         <div className="p-8">
-          <h2 className="text-2xl font-bold text-gray-800 mb-6 text-center">
+          <h2 className="text-3xl font-bold text-gray-800 mb-8 text-center">
             Acesso ao Sistema
           </h2>
+
+          {/* Indicador de Status GPS */}
+          <div className={`flex items-center justify-center p-3 rounded-lg mb-4 ${
+            gpsStatus === 'checking' ? 'bg-yellow-50 border border-yellow-300' :
+            gpsStatus === 'enabled' ? 'bg-green-50 border border-green-300' :
+            'bg-red-50 border border-red-300'
+          }`}>
+            <div className="flex items-center">
+              {gpsStatus === 'checking' && (
+                <>
+                  <div className="animate-spin h-4 w-4 border-2 border-yellow-600 border-t-transparent rounded-full mr-2"></div>
+                  <span className="text-yellow-700 text-sm">Verificando GPS...</span>
+                </>
+              )}
+              {gpsStatus === 'enabled' && (
+                <>
+                  <div className="h-4 w-4 bg-green-600 rounded-full mr-2"></div>
+                  <span className="text-green-700 text-sm">🛡️ GPS Habilitado - Sistema Seguro</span>
+                </>
+              )}
+              {gpsStatus === 'disabled' && (
+                <>
+                  <div className="h-4 w-4 bg-red-600 rounded-full mr-2"></div>
+                  <span className="text-red-700 text-sm">🚫 GPS Desabilitado - Acesso Negado</span>
+                </>
+              )}
+            </div>
+          </div>
 
           {error && (
             <div className="bg-red-50 border border-red-300 text-red-700 px-4 py-3 rounded-lg mb-4">
@@ -132,11 +198,29 @@ export default function LoginPage() {
 
             <button
               type="submit"
-              disabled={loading}
-              className="w-full bg-gradient-to-r from-green-600 to-blue-700 text-white py-3 px-4 rounded-lg font-medium hover:from-green-700 hover:to-blue-800 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200"
+              disabled={loading || gpsStatus !== 'enabled'}
+              className={`w-full py-3 px-4 rounded-lg font-medium focus:outline-none focus:ring-2 focus:ring-offset-2 transition-all duration-200 ${
+                gpsStatus === 'enabled' && !loading
+                  ? 'bg-gradient-to-r from-green-600 to-blue-700 text-white hover:from-green-700 hover:to-blue-800 focus:ring-green-500'
+                  : 'bg-gray-400 text-gray-700 cursor-not-allowed'
+              }`}
             >
-              {loading ? 'Entrando...' : 'Entrar no Sistema'}
+              {loading ? 'Entrando...' : 
+               gpsStatus === 'checking' ? 'Verificando GPS...' :
+               gpsStatus === 'disabled' ? '🚫 GPS Necessário' : 
+               'Entrar no Sistema'}
             </button>
+
+            {/* Botão para tentar recarregar GPS */}
+            {gpsStatus === 'disabled' && (
+              <button
+                type="button"
+                onClick={checkGPSStatus}
+                className="w-full mt-3 bg-yellow-500 text-white py-2 px-4 rounded-lg font-medium hover:bg-yellow-600 focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:ring-offset-2 transition-all duration-200"
+              >
+                🔄 Tentar Novamente GPS
+              </button>
+            )}
           </form>
 
           {/* Informações para teste */}

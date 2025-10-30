@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { CompanyUserService } from '@/lib/services/companyUserService';
 import { LogService } from '@/lib/utils/logger';
-import { CaptureUtils } from '@/lib/utils/capture';
 
 export async function POST(request: NextRequest) {
   try {

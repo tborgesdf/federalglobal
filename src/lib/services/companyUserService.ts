@@ -24,9 +24,29 @@ export interface UpdateCompanyUserData {
   active?: boolean;
 }
 
+export interface CompanyUserResponse {
+  id: number;
+  cpf: string;
+  fullName: string;
+  birthDate: Date;
+  email: string;
+  phone: string;
+  role: 'SUPER_ADMIN' | 'ADMIN' | 'USER';
+  photo?: string | null;
+  protocolNumber: string;
+  active: boolean;
+  createdAt: Date;
+  updatedAt: Date;
+  createdById?: number | null;
+}
+
+export interface CompanyUserWithPassword extends CompanyUserResponse {
+  password: string;
+}
+
 export class CompanyUserService {
   // Criar usuário da empresa
-  static async createUser(data: CreateCompanyUserData): Promise<any> {
+  static async createUser(data: CreateCompanyUserData): Promise<CompanyUserResponse> {
     try {
       // Validar CPF
       if (!SecurityUtils.validateCPF(data.cpf)) {
@@ -82,8 +102,9 @@ export class CompanyUserService {
       );
 
       // Retornar dados sem senha
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
       const { password, ...userWithoutPassword } = user;
-      return userWithoutPassword;
+      return userWithoutPassword as CompanyUserResponse;
     } catch (error) {
       console.error('Erro ao criar usuário:', error);
       throw error;
@@ -94,8 +115,9 @@ export class CompanyUserService {
   static async updateUser(
     id: number, 
     data: UpdateCompanyUserData,
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     updatedById: number
-  ): Promise<any> {
+  ): Promise<CompanyUserResponse> {
     try {
       const user = await prisma.companyUser.update({
         where: { id },
@@ -106,8 +128,9 @@ export class CompanyUserService {
       });
 
       // Retornar dados sem senha
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
       const { password, ...userWithoutPassword } = user;
-      return userWithoutPassword;
+      return userWithoutPassword as CompanyUserResponse;
     } catch (error) {
       console.error('Erro ao atualizar usuário:', error);
       throw error;
@@ -115,7 +138,7 @@ export class CompanyUserService {
   }
 
   // Buscar usuário por CPF (para login)
-  static async findByCPF(cpf: string): Promise<any | null> {
+  static async findByCPF(cpf: string): Promise<CompanyUserWithPassword | null> {
     try {
       const cleanCPF = cpf.replace(/[^\d]/g, '');
       
@@ -132,7 +155,7 @@ export class CompanyUserService {
   }
 
   // Verificar login
-  static async verifyLogin(cpf: string, password: string): Promise<any | null> {
+  static async verifyLogin(cpf: string, password: string): Promise<CompanyUserResponse | null> {
     try {
       const user = await this.findByCPF(cpf);
       
@@ -147,8 +170,9 @@ export class CompanyUserService {
       }
 
       // Retornar dados sem senha
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
       const { password: _, ...userWithoutPassword } = user;
-      return userWithoutPassword;
+      return userWithoutPassword as CompanyUserResponse;
     } catch (error) {
       console.error('Erro ao verificar login:', error);
       return null;
@@ -164,7 +188,7 @@ export class CompanyUserService {
       role?: string;
       search?: string;
     }
-  ): Promise<any[]> {
+  ): Promise<CompanyUserResponse[]> {
     try {
       // Verificar permissões
       if (!['SUPER_ADMIN', 'ADMIN'].includes(requestingUserRole)) {
@@ -298,7 +322,7 @@ export class CompanyUserService {
   }
 
   // Criar usuário Super Admin inicial
-  static async createInitialSuperAdmin(): Promise<any> {
+  static async createInitialSuperAdmin(): Promise<CompanyUserResponse> {
     try {
       // Verificar se já existe um Super Admin
       const existingSuperAdmin = await prisma.companyUser.findFirst({

@@ -1,5 +1,4 @@
 import axios from 'axios';
-import geoip from 'geoip-lite';
 
 export interface NetworkData {
   ipAddress: string;
@@ -10,7 +9,7 @@ export interface NetworkData {
   timezone: string;
   protocol: string;
   ports: string[];
-  packetsData: any;
+  packetsData: Record<string, unknown>;
   internetProvider: string;
   proxyVpn: boolean;
   connectionType: string;
@@ -20,14 +19,14 @@ export interface DeviceData {
   operatingSystem: string;
   browser: string;
   userAgent: string;
-  navigationData?: any;
+  navigationData?: Record<string, unknown>;
   gpsLatitude?: number;
   gpsLongitude?: number;
   gpsMapLink?: string;
   deviceCountry: string;
   deviceCity: string;
   deviceState: string;
-  weatherData?: any;
+  weatherData?: WeatherData;
 }
 
 export interface WeatherData {
@@ -43,20 +42,28 @@ export class CaptureUtils {
   // Capturar dados de rede baseado no IP
   static async captureNetworkData(request: Request): Promise<NetworkData> {
     const ipAddress = this.getClientIP(request);
-    const geoData = geoip.lookup(ipAddress);
+    let geoData = null;
+    
+    try {
+      // Usar serviço externo para geolocalização por IP
+      const response = await axios.get(`http://ip-api.com/json/${ipAddress}`);
+      geoData = response.data;
+    } catch (error) {
+      console.error('Erro ao obter dados geográficos:', error);
+    }
     
     return {
       ipAddress,
       ipMapLink: `https://www.google.com/maps/search/?api=1&query=${ipAddress}`,
       country: geoData?.country || 'Unknown',
       city: geoData?.city || 'Unknown',
-      state: geoData?.region || 'Unknown',
+      state: geoData?.regionName || 'Unknown',
       timezone: geoData?.timezone || 'Unknown',
       protocol: this.detectProtocol(request),
       ports: this.detectPorts(request),
       packetsData: await this.getPacketsData(request),
-      internetProvider: await this.getInternetProvider(ipAddress),
-      proxyVpn: await this.detectProxyVPN(ipAddress),
+      internetProvider: geoData?.isp || 'Unknown',
+      proxyVpn: geoData?.proxy || false,
       connectionType: this.detectConnectionType(request)
     };
   }
@@ -79,7 +86,10 @@ export class CaptureUtils {
       deviceData.gpsLatitude = gpsCoords.lat;
       deviceData.gpsLongitude = gpsCoords.lng;
       deviceData.gpsMapLink = `https://www.google.com/maps/search/?api=1&query=${gpsCoords.lat},${gpsCoords.lng}`;
-      deviceData.weatherData = await this.getWeatherData(gpsCoords.lat, gpsCoords.lng);
+      const weatherResult = await this.getWeatherData(gpsCoords.lat, gpsCoords.lng);
+      if (weatherResult) {
+        deviceData.weatherData = weatherResult;
+      }
     }
 
     return deviceData;
@@ -117,7 +127,7 @@ export class CaptureUtils {
   }
 
   // Obter dados de pacotes (simulado)
-  private static async getPacketsData(request: Request): Promise<any> {
+  private static async getPacketsData(request: Request): Promise<Record<string, unknown>> {
     return {
       method: request.method,
       contentLength: request.headers.get('content-length') || '0',
@@ -125,26 +135,6 @@ export class CaptureUtils {
       connection: request.headers.get('connection') || '',
       timestamp: new Date().toISOString()
     };
-  }
-
-  // Detectar provedor de internet
-  private static async getInternetProvider(ip: string): Promise<string> {
-    try {
-      const response = await axios.get(`http://ip-api.com/json/${ip}`);
-      return response.data.isp || 'Unknown';
-    } catch {
-      return 'Unknown';
-    }
-  }
-
-  // Detectar proxy/VPN
-  private static async detectProxyVPN(ip: string): Promise<boolean> {
-    try {
-      const response = await axios.get(`http://ip-api.com/json/${ip}?fields=proxy`);
-      return response.data.proxy || false;
-    } catch {
-      return false;
-    }
   }
 
   // Detectar tipo de conexão
@@ -181,46 +171,172 @@ export class CaptureUtils {
     return 'Unknown';
   }
 
-  // Obter localização por GPS
-  private static async getLocationFromGPS(lat: number, lng: number): Promise<any> {
+  // Obter localização por GPS (API gratuita com fallback)
+  private static async getLocationFromGPS(lat: number, lng: number): Promise<Record<string, string> | null> {
     try {
-      const response = await axios.get(
-        `https://api.opencagedata.com/geocode/v1/json?q=${lat}+${lng}&key=${process.env.OPENCAGE_API_KEY}`
+      // Primeira tentativa: OpenCage API (gratuita até 2500/dia)
+      const geocodeApiKey = process.env.OPENCAGE_API_KEY;
+      
+      if (geocodeApiKey && geocodeApiKey !== 'GET_FREE_KEY_AT_OPENCAGEDATA_COM') {
+        try {
+          const response = await axios.get(
+            `https://api.opencagedata.com/geocode/v1/json?q=${lat}+${lng}&key=${geocodeApiKey}&language=pt&pretty=1`
+          );
+          
+          if (response.data.results && response.data.results.length > 0) {
+            const result = response.data.results[0];
+            const components = result.components;
+            
+            return {
+              country: components.country || 'Desconhecido',
+              state: components.state || 'Desconhecido',
+              city: components.city || components.town || components.village || 'Desconhecido',
+              address: result.formatted || 'Endereço não disponível'
+            };
+          }
+        } catch (error) {
+          console.error('Erro na API OpenCage:', error);
+        }
+      }
+
+      // Fallback: API gratuita sem chave (BigDataCloud)
+      const fallbackResponse = await axios.get(
+        `https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${lat}&longitude=${lng}&localityLanguage=pt`
       );
       
-      const result = response.data.results[0];
+      const data = fallbackResponse.data;
       return {
-        country: result?.components?.country || 'Unknown',
-        city: result?.components?.city || result?.components?.town || 'Unknown',
-        state: result?.components?.state || 'Unknown'
+        country: data.countryName || 'Desconhecido',
+        state: data.principalSubdivision || 'Desconhecido', 
+        city: data.city || data.locality || 'Desconhecido',
+        address: data.localityInfo?.administrative?.[0]?.name || 'Endereço não disponível'
       };
-    } catch {
+    } catch (error) {
+      console.error('Erro ao obter localização:', error);
       return {
-        country: 'Unknown',
-        city: 'Unknown',
-        state: 'Unknown'
+        country: 'Desconhecido',
+        state: 'Desconhecido',
+        city: 'Desconhecido',
+        address: 'Localização não disponível'
       };
     }
   }
 
-  // Obter dados meteorológicos
+  // Obter dados meteorológicos (API gratuita com fallback)
   private static async getWeatherData(lat: number, lng: number): Promise<WeatherData | null> {
     try {
-      const response = await axios.get(
-        `https://api.openweathermap.org/data/2.5/weather?lat=${lat}&lon=${lng}&appid=${process.env.OPENWEATHER_API_KEY}&units=metric&lang=pt_br`
+      // Primeira tentativa: OpenWeatherMap API (gratuita até 1000/dia)
+      const weatherApiKey = process.env.OPENWEATHER_API_KEY;
+      
+      if (weatherApiKey && weatherApiKey !== 'GET_FREE_KEY_AT_OPENWEATHERMAP_ORG') {
+        try {
+          const weatherResponse = await axios.get(
+            `https://api.openweathermap.org/data/2.5/weather?lat=${lat}&lon=${lng}&appid=${weatherApiKey}&units=metric&lang=pt_br`
+          );
+          
+          const weather = weatherResponse.data;
+          return {
+            temperature: weather.main.temp,
+            description: weather.weather[0].description,
+            humidity: weather.main.humidity,
+            pressure: weather.main.pressure,
+            windSpeed: weather.wind?.speed || 0,
+            timestamp: new Date().toISOString()
+          };
+        } catch (error) {
+          console.error('Erro na API OpenWeatherMap:', error);
+        }
+      }
+
+      // Fallback: API gratuita sem chave (wttr.in)
+      const fallbackResponse = await axios.get(
+        `https://wttr.in/${lat},${lng}?format=j1`
       );
       
-      const data = response.data;
+      const data = fallbackResponse.data;
+      const current = data.current_condition[0];
+      
       return {
-        temperature: data.main.temp,
-        description: data.weather[0].description,
-        humidity: data.main.humidity,
-        pressure: data.main.pressure,
-        windSpeed: data.wind.speed,
+        temperature: parseFloat(current.temp_C),
+        description: current.weatherDesc[0].value,
+        humidity: parseFloat(current.humidity),
+        pressure: parseFloat(current.pressure),
+        windSpeed: parseFloat(current.windspeedKmph) / 3.6, // Converter para m/s
         timestamp: new Date().toISOString()
       };
-    } catch {
-      return null;
+    } catch (error) {
+      console.error('Erro ao obter dados meteorológicos:', error);
+      return {
+        temperature: 0,
+        description: 'Dados indisponíveis',
+        humidity: 0,
+        pressure: 0,
+        windSpeed: 0,
+        timestamp: new Date().toISOString()
+      };
     }
+  }
+
+  // Verificar se GPS está habilitado (obrigatório para o sistema)
+  static checkGPSPermission(): Promise<boolean> {
+    return new Promise((resolve) => {
+      if (!navigator.geolocation) {
+        resolve(false);
+        return;
+      }
+
+      navigator.geolocation.getCurrentPosition(
+        () => resolve(true),
+        (error) => {
+          console.error('GPS Error:', error);
+          resolve(false);
+        },
+        { 
+          enableHighAccuracy: true, 
+          timeout: 10000,
+          maximumAge: 60000
+        }
+      );
+    });
+  }
+
+  // Obter coordenadas GPS (obrigatório para funcionamento)
+  static getGPSCoordinates(): Promise<{ lat: number; lng: number }> {
+    return new Promise((resolve, reject) => {
+      if (!navigator.geolocation) {
+        reject(new Error('GPS_NOT_SUPPORTED'));
+        return;
+      }
+
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          resolve({
+            lat: position.coords.latitude,
+            lng: position.coords.longitude
+          });
+        },
+        (error) => {
+          console.error('GPS Error:', error);
+          switch (error.code) {
+            case 1:
+              reject(new Error('GPS_PERMISSION_DENIED'));
+              break;
+            case 2:
+              reject(new Error('GPS_POSITION_UNAVAILABLE'));
+              break;
+            case 3:
+              reject(new Error('GPS_TIMEOUT'));
+              break;
+            default:
+              reject(new Error('GPS_UNKNOWN_ERROR'));
+          }
+        },
+        { 
+          enableHighAccuracy: true, 
+          timeout: 15000,
+          maximumAge: 60000
+        }
+      );
+    });
   }
 }
