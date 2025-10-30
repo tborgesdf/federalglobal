@@ -26,7 +26,8 @@ Sistema avançado de inteligência e contrainteligência empresarial.
 
 ## URLs
 
-- Produção: https://federalglobal-akn2ytecq-thiago-borges-projects-3ed92125.vercel.app
+- Produção: https://federalglobal-dhntejv9m-thiago-borges-projects-3ed92125.vercel.app
+- Login: https://federalglobal-dhntejv9m-thiago-borges-projects-3ed92125.vercel.app/login
 - GitHub: https://github.com/tborgesdf/federalglobal
 
 Desenvolvido por DeltaFox Consultoria © 2024
