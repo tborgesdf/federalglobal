@@ -23,6 +23,23 @@ export interface ActionLogData {
   ipAddress: string;
 }
 
+// Função simplificada para logging rápido
+export async function logAction(data: {
+  action: string;
+  details?: Record<string, unknown>;
+  status: 'success' | 'error' | 'warning' | 'info';
+  userId?: number;
+}): Promise<void> {
+  try {
+    console.log(`[${data.status.toUpperCase()}] ${data.action}`, data.details || {});
+    
+    // TODO: Implementar persistência real no banco quando necessário
+    // Por enquanto, apenas log no console para debug
+  } catch (error) {
+    console.error('Erro ao registrar log:', error);
+  }
+}
+
 export class LogService {
   // Criar log de acesso
   static async createAccessLog(data: LogData): Promise<number> {
