@@ -13,86 +13,215 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-// Modelo para usuários do sistema
-model User {
-  id        Int      @id @default(autoincrement())
-  email     String   @unique
-  name      String?
-  password  String
-  role      Role     @default(USER)
-  active    Boolean  @default(true)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
+// Modelo para usuários da empresa (Super Admin, Admin, Users)
+model CompanyUser {
+  id              Int      @id @default(autoincrement())
+  cpf             String   @unique
+  fullName        String
+  birthDate       DateTime
+  email           String   @unique
+  phone           String
+  photo           String?
+  role            CompanyRole @default(USER)
+  active          Boolean  @default(true)
+  protocolNumber  String   @unique
+  password        String   // Criptografado
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  
   // Relacionamentos
-  reports   Report[]
-  sessions  UserSession[]
+  accessLogs      AccessLog[]
+  actionLogs      ActionLog[]
+  createdUsers    CompanyUser[] @relation("UserCreator")
+  createdBy       CompanyUser?  @relation("UserCreator", fields: [createdById], references: [id])
+  createdById     Int?
 
-  @@map("users")
+  @@map("company_users")
 }
 
-// Modelo para relatórios de segurança
-model Report {
-  id          Int      @id @default(autoincrement())
-  title       String
-  description String   @db.Text
-  category    Category
-  priority    Priority @default(MEDIUM)
-  status      Status   @default(PENDING)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+// Modelo para captura de dados de rede
+model NetworkCapture {
+  id                    Int       @id @default(autoincrement())
+  accessLogId           Int       @unique
+  ipAddress            String
+  ipMapLink            String    // Link para mapa do IP
+  country              String
+  city                 String
+  state                String
+  timezone             String
+  protocol             String
+  ports                String    // JSON array das portas
+  packetsData          String    @db.Text // JSON com dados dos pacotes
+  internetProvider     String    // Operadora (VIVO, Claro, etc)
+  proxyVpn             Boolean   @default(false)
+  connectionType       String    // Wi-fi, 3G, 4G, 5G
+  createdAt            DateTime  @default(now())
+  
+  // Relacionamento
+  accessLog            AccessLog @relation(fields: [accessLogId], references: [id], onDelete: Cascade)
 
-  // Relacionamentos
-  userId      Int
-  user        User     @relation(fields: [userId], references: [id])
-  attachments Attachment[]
-
-  @@map("reports")
+  @@map("network_captures")
 }
 
-// Modelo para anexos dos relatórios
-model Attachment {
-  id       Int    @id @default(autoincrement())
-  filename String
-  filepath String
-  filesize Int
-  mimetype String
+// Modelo para captura de dados do dispositivo
+model DeviceCapture {
+  id                Int       @id @default(autoincrement())
+  accessLogId       Int       @unique
+  operatingSystem   String
+  browser           String
+  userAgent         String    @db.Text
+  navigationData    String?   @db.Text // JSON com dados de navegação
+  gpsLatitude       Decimal?  @db.Decimal(10, 8)
+  gpsLongitude      Decimal?  @db.Decimal(11, 8)
+  gpsMapLink        String?   // Link para mapa GPS
+  deviceCountry     String
+  deviceCity        String
+  deviceState       String
+  weatherData       String?   @db.Text // JSON com dados meteorológicos
+  createdAt         DateTime  @default(now())
+  
+  // Relacionamento
+  accessLog         AccessLog @relation(fields: [accessLogId], references: [id], onDelete: Cascade)
 
-  // Relacionamentos
-  reportId Int
-  report   Report @relation(fields: [reportId], references: [id], onDelete: Cascade)
-
-  @@map("attachments")
+  @@map("device_captures")
 }
 
-// Modelo para sessões de usuário
-model UserSession {
-  id        String   @id
-  userId    Int
-  expiresAt DateTime
-  createdAt DateTime @default(now())
-
+// Modelo para logs de acesso
+model AccessLog {
+  id              Int       @id @default(autoincrement())
+  userId          Int?
+  clientId        Int?      // Para clientes do sistema
+  accessType      AccessType
+  sessionId       String    @unique
+  accessDateTime  DateTime  @default(now())
+  ipAddress       String
+  successful      Boolean   @default(true)
+  
   // Relacionamentos
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user            CompanyUser?    @relation(fields: [userId], references: [id])
+  client          Client?         @relation(fields: [clientId], references: [id])
+  networkCapture  NetworkCapture?
+  deviceCapture   DeviceCapture?
+  actionLogs      ActionLog[]
 
-  @@map("user_sessions")
+  @@map("access_logs")
+}
+
+// Modelo para logs de ações
+model ActionLog {
+  id              Int       @id @default(autoincrement())
+  accessLogId     Int
+  userId          Int
+  action          String    // Descrição da ação
+  targetTable     String?   // Tabela afetada
+  targetId        Int?      // ID do registro afetado
+  oldData         String?   @db.Text // JSON com dados anteriores
+  newData         String?   @db.Text // JSON com novos dados
+  ipAddress       String
+  createdAt       DateTime  @default(now())
+  
+  // Relacionamentos
+  accessLog       AccessLog   @relation(fields: [accessLogId], references: [id], onDelete: Cascade)
+  user            CompanyUser @relation(fields: [userId], references: [id])
+
+  @@map("action_logs")
+}
+
+// Modelo para clientes do sistema
+model Client {
+  id              Int       @id @default(autoincrement())
+  cpf             String?   @unique
+  cnpj            String?   @unique
+  fullName        String
+  email           String    @unique
+  phone           String
+  active          Boolean   @default(true)
+  protocolNumber  String    @unique
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  
+  // Relacionamentos
+  processes       Process[]
+  accessLogs      AccessLog[]
+
+  @@map("clients")
+}
+
+// Modelo para processos
+model Process {
+  id              Int       @id @default(autoincrement())
+  clientId        Int
+  title           String
+  description     String    @db.Text
+  category        ProcessCategory
+  priority        Priority  @default(MEDIUM)
+  status          ProcessStatus @default(PENDING)
+  protocolNumber  String    @unique
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  
+  // Relacionamentos
+  client          Client    @relation(fields: [clientId], references: [id])
+  attachments     ProcessAttachment[]
+  alerts          ProcessAlert[]
+
+  @@map("processes")
+}
+
+// Modelo para anexos dos processos
+model ProcessAttachment {
+  id          Int     @id @default(autoincrement())
+  processId   Int
+  filename    String
+  filepath    String
+  filesize    Int
+  mimetype    String
+  uploadedAt  DateTime @default(now())
+  
+  // Relacionamento
+  process     Process @relation(fields: [processId], references: [id], onDelete: Cascade)
+
+  @@map("process_attachments")
+}
+
+// Modelo para alertas dos processos
+model ProcessAlert {
+  id          Int       @id @default(autoincrement())
+  processId   Int
+  message     String    @db.Text
+  alertType   AlertType @default(INFO)
+  active      Boolean   @default(true)
+  createdAt   DateTime  @default(now())
+  
+  // Relacionamento
+  process     Process   @relation(fields: [processId], references: [id], onDelete: Cascade)
+
+  @@map("process_alerts")
 }
 
 // Enums
-enum Role {
+enum CompanyRole {
+  SUPER_ADMIN
   ADMIN
-  MANAGER
-  ANALYST
   USER
 }
 
-enum Category {
+enum AccessType {
+  SUPER_ADMIN_DASHBOARD
+  ADMIN_DASHBOARD
+  USER_DASHBOARD
+  CLIENT_PORTAL
+}
+
+enum ProcessCategory {
   INTELLIGENCE
   COUNTERINTELLIGENCE
   SECURITY
   INVESTIGATION
   COMPLIANCE
   RISK_ASSESSMENT
+  MIGRATION
+  DOCUMENTATION
 }
 
 enum Priority {
@@ -102,9 +231,17 @@ enum Priority {
   CRITICAL
 }
 
-enum Status {
+enum ProcessStatus {
   PENDING
   IN_PROGRESS
   COMPLETED
   CANCELLED
+  ALERT
+}
+
+enum AlertType {
+  INFO
+  WARNING
+  ERROR
+  CRITICAL
 }
