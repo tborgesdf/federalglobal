@@ -167,9 +167,9 @@ Write-Host "   • Status DNS Cliente: $(if($ClienteOk){"✅ OK"}else{"❌ Manua
 Write-Host "   • Status DNS Admin: $(if($AdminOk){"✅ OK"}else{"❌ Manual"})" -ForegroundColor White
 
 Write-Host "`n🌐 URLs Disponíveis:" -ForegroundColor Yellow
-Write-Host "   🔷 Cliente (Público): https://federalglobal.deltafoxconsult.com.br" -ForegroundColor Blue
+Write-Host "   🔷 Cliente (Portal): https://federalglobal.deltafoxconsult.com.br" -ForegroundColor Blue
 Write-Host "   🔶 Admin (Dashboard): https://admin.federalglobal.deltafoxconsult.com.br" -ForegroundColor Red
-Write-Host "   🔸 Vercel (Direto): $NewUrl" -ForegroundColor Gray
+Write-Host "   🔸 Vercel (Deploy): $NewUrl" -ForegroundColor Gray
 
 Write-Host "`n⏰ Aguarde alguns minutos para a propagação do DNS" -ForegroundColor Yellow
 Write-Host "📖 Consulte DNS_CONFIG.md para instruções detalhadas" -ForegroundColor Cyan
