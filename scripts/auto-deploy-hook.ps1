@@ -30,7 +30,7 @@ function Start-AutoDeploy {
 }
 
 # 2. Configurar Git Hook para deploy automático após push
-$GitHookPath = ".git\hooks\post-commit"
+$GitHookPath = ".git/hooks/post-commit"
 $GitHookContent = @"
 #!/bin/sh
 # Git Hook - Deploy automático após commit
@@ -40,8 +40,8 @@ powershell.exe -ExecutionPolicy Bypass -File "./scripts/auto-deploy-hook.ps1" "p
 
 try {
     if (Test-Path ".git") {
-        if (!(Test-Path ".git\hooks")) {
-            New-Item -ItemType Directory -Path ".git\hooks" -Force
+        if (!(Test-Path ".git/hooks")) {
+            New-Item -ItemType Directory -Path ".git/hooks" -Force
         }
         
         Set-Content -Path $GitHookPath -Value $GitHookContent -Encoding UTF8
