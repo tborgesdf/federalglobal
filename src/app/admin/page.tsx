@@ -1,6 +1,7 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
+import { useRouter } from 'next/navigation'
 
 interface SystemStats {
   totalUsers: number
@@ -18,6 +19,10 @@ interface ActivityItem {
 }
 
 export default function AdminDashboard() {
+  const router = useRouter()
+  const [isAuthenticated, setIsAuthenticated] = useState(false)
+  const [loading, setLoading] = useState(true)
+  
   const [stats] = useState<SystemStats>({
     totalUsers: 156,
     totalCompanies: 23,
@@ -31,6 +36,49 @@ export default function AdminDashboard() {
     { id: 3, action: 'Nova empresa cadastrada', user: 'Admin', time: '10 min atrás', type: 'info' },
     { id: 4, action: 'Logout automático', user: 'Pedro Costa', time: '15 min atrás', type: 'neutral' }
   ])
+
+  useEffect(() => {
+    // Verificar autenticação (simulado por cookies ou localStorage)
+    const checkAuth = () => {
+      try {
+        const sessionToken = document.cookie
+          .split('; ')
+          .find(row => row.startsWith('session_token='))
+          ?.split('=')[1];
+
+        if (!sessionToken) {
+          // Não autenticado - redirecionar para login
+          router.push('/admin/login')
+          return
+        }
+
+        // Verificar se é um token válido (simplificado)
+        setIsAuthenticated(true)
+      } catch (error) {
+        console.error('Erro ao verificar autenticação:', error)
+        router.push('/admin/login')
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    checkAuth()
+  }, [router])
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-slate-900 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto mb-4"></div>
+          <p className="text-white">Verificando autenticação...</p>
+        </div>
+      </div>
+    )
+  }
+
+  if (!isAuthenticated) {
+    return null // O redirecionamento já foi feito
+  }
 
   return (
     <div className="space-y-6">

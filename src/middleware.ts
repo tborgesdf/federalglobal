@@ -17,6 +17,10 @@ export function middleware(request: NextRequest) {
   // Redirecionar para interfaces específicas
   if (isAdmin) {
     // Se está tentando acessar área admin
+    if (url.pathname === '/' || url.pathname === '') {
+      url.pathname = '/admin/login'
+      return NextResponse.redirect(url)
+    }
     if (!url.pathname.startsWith('/admin')) {
       url.pathname = `/admin${url.pathname}`
       return NextResponse.rewrite(url)
@@ -25,11 +29,15 @@ export function middleware(request: NextRequest) {
     // Se está tentando acessar área cliente
     if (url.pathname.startsWith('/admin')) {
       url.pathname = '/client'
-      return NextResponse.rewrite(url)
+      return NextResponse.redirect(url)
     }
     if (!url.pathname.startsWith('/client') && url.pathname !== '/') {
       url.pathname = `/client${url.pathname}`
       return NextResponse.rewrite(url)
+    }
+    if (url.pathname === '/' || url.pathname === '') {
+      url.pathname = '/client'
+      return NextResponse.redirect(url)
     }
   }
   

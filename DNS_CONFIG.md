@@ -17,7 +17,7 @@ admin.federalglobal.deltafoxconsult.com.br
 Nome: federalglobal
 Tipo: CNAME
 TTL: 300 (5 minutos)
-Destino: federalglobal-l4vb6b6ln-thiago-borges-projects-3ed92125.vercel.app
+Destino: federalglobal-nhd4t7fgq-thiago-borges-projects-3ed92125.vercel.app
 `
 
 #### 2. DomÃ­nio Administrativo (Dashboard):
@@ -25,11 +25,11 @@ Destino: federalglobal-l4vb6b6ln-thiago-borges-projects-3ed92125.vercel.app
 Nome: admin.federalglobal
 Tipo: CNAME
 TTL: 300 (5 minutos)
-Destino: federalglobal-l4vb6b6ln-thiago-borges-projects-3ed92125.vercel.app
+Destino: federalglobal-nhd4t7fgq-thiago-borges-projects-3ed92125.vercel.app
 `
 
 ### URL Atual do Vercel:
-https://federalglobal-l4vb6b6ln-thiago-borges-projects-3ed92125.vercel.app
+https://federalglobal-nhd4t7fgq-thiago-borges-projects-3ed92125.vercel.app
 
 ### Status dos DomÃ­nios:
 - âœ… Sistema Cliente: federalglobal.deltafoxconsult.com.br
@@ -38,7 +38,7 @@ https://federalglobal-l4vb6b6ln-thiago-borges-projects-3ed92125.vercel.app
 - âœ… DNS AutomÃ¡tico: Configurado
 
 ### Ãšltima AtualizaÃ§Ã£o:
-30/10/2025 20:04 - Deploy automÃ¡tico executado
+30/10/2025 20:13 - Deploy automÃ¡tico executado
 
 ### Comandos de VerificaÃ§Ã£o:
 `ash
