@@ -7,7 +7,8 @@
     "build": "prisma generate && next build",
     "start": "next start",
     "lint": "next lint",
-    "postinstall": "prisma generate"
+    "postinstall": "prisma generate",
+    "vercel-build": "prisma generate && next build"
   },
   "dependencies": {
     "@google/generative-ai": "^0.24.1",
@@ -18,7 +19,6 @@
     "axios": "^1.13.1",
     "bcryptjs": "^3.0.2",
     "crypto-js": "^4.2.0",
-    "geoip-lite": "^1.4.10",
     "jsonwebtoken": "^9.0.2",
     "mysql2": "^3.15.3",
     "next": "16.0.1",
@@ -32,7 +32,6 @@
   "devDependencies": {
     "@tailwindcss/postcss": "^4",
     "@types/bcryptjs": "^2.4.6",
-    "@types/geoip-lite": "^1.4.4",
     "@types/jsonwebtoken": "^9.0.10",
     "@types/node": "^20",
     "@types/react": "^19",

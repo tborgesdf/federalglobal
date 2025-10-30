@@ -1,8 +1,14 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  /* config options here */
-  reactCompiler: true,
+  images: {
+    unoptimized: true,
+  },
+  serverExternalPackages: ['prisma', '@prisma/client'],
+  env: {
+    DATABASE_URL: process.env.DATABASE_URL,
+    GOOGLE_API_KEY: process.env.GOOGLE_API_KEY,
+  },
 };
 
 export default nextConfig;
