@@ -175,7 +175,7 @@ export default function LoginPage() {
                 value={cpf}
                 onChange={handleCPFChange}
                 placeholder="000.000.000-00"
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent text-black placeholder-gray-500"
                 required
                 maxLength={14}
               />
@@ -191,7 +191,7 @@ export default function LoginPage() {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="Digite sua senha"
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent text-black placeholder-gray-500"
                 required
               />
             </div>
@@ -227,8 +227,9 @@ export default function LoginPage() {
           <div className="mt-8 p-4 bg-gray-50 rounded-lg">
             <h3 className="text-sm font-medium text-gray-700 mb-2">Dados para teste:</h3>
             <p className="text-xs text-gray-600">
-              CPF: 027.692.569-63<br />
-              Senha: FederalGlobal2024!
+              CPF: 123.456.789-01<br />
+              Senha: SuperAdmin2024!<br />
+              Protocolo: FG414712EEGGZT
             </p>
           </div>
         </div>
