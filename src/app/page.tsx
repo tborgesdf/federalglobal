@@ -2,49 +2,28 @@
 
 import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import Image from 'next/image';
+import { useDomainContext } from '../lib/utils/domain';
 
 export default function Home() {
   const router = useRouter();
+  const domainContext = useDomainContext();
 
   useEffect(() => {
-    // Verificar se há usuário logado
-    const user = localStorage.getItem('user');
-    if (user) {
-      const userData = JSON.parse(user);
-      // Redirecionar baseado no role
-      switch (userData.role) {
-        case 'SUPER_ADMIN':
-          router.push('/dashboard/super-admin');
-          break;
-        case 'ADMIN':
-          router.push('/dashboard/admin');
-          break;
-        case 'USER':
-          router.push('/dashboard/user');
-          break;
-        default:
-          router.push('/login');
-      }
-    } else {
-      // Redirecionar para login após 3 segundos
-      setTimeout(() => {
-        router.push('/login');
-      }, 3000);
+    // Redirecionar baseado no contexto do domínio
+    if (domainContext.isAdmin) {
+      router.push('/admin');
+    } else if (domainContext.isClient || domainContext.isDevelopment) {
+      router.push('/client');
     }
-  }, [router]);
+  }, [router, domainContext]);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-green-600 via-blue-700 to-green-800 flex items-center justify-center">
       <div className="text-center text-white">
         <div className="mb-8">
-          <Image
-            src="/logo_federal_global_sem_fundo.png"
-            alt="Federal Global"
-            width={200}
-            height={150}
-            className="mx-auto mb-6"
-          />
+          <div className="w-48 h-36 mx-auto mb-6 bg-white/10 rounded-lg flex items-center justify-center">
+            <span className="text-4xl">🛡️</span>
+          </div>
         </div>
         
         <h1 className="text-5xl font-bold mb-4">Federal Global</h1>
@@ -57,20 +36,24 @@ export default function Home() {
           <p className="text-base text-blue-100">
             Protegendo o futuro das empresas através da inteligência estratégica
           </p>
+          <div className="mt-4 text-sm text-blue-200">
+            <p>Domínio: {domainContext.hostname}</p>
+            <p>Tipo: {domainContext.type}</p>
+          </div>
         </div>
 
         <div className="animate-pulse">
           <p className="text-sm text-white opacity-75">
-            Redirecionando para o sistema...
+            Redirecionando para {domainContext.isAdmin ? 'painel administrativo' : 'portal do cliente'}...
           </p>
         </div>
 
-        <div className="mt-12">
+        <div className="mt-12 space-x-4">
           <button
-            onClick={() => router.push('/login')}
+            onClick={() => router.push(domainContext.isAdmin ? '/admin' : '/client')}
             className="bg-white text-green-700 px-8 py-3 rounded-lg font-semibold hover:bg-green-50 transition-colors duration-200"
           >
-            Acessar Sistema
+            Acessar {domainContext.isAdmin ? 'Dashboard' : 'Portal'}
           </button>
         </div>
 
