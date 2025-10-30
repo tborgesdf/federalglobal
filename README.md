@@ -1,36 +1,145 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Federal Global by DeltaFox
 
-## Getting Started
+Sistema completo de inteligência e contrainteligência empresarial desenvolvido em Next.js com TypeScript.
 
-First, run the development server:
+## 📋 Sobre o Projeto
+
+O Federal Global é uma plataforma abrangente para gestão de segurança empresarial, oferecendo ferramentas avançadas para:
+
+- **Inteligência Empresarial**: Coleta e análise de dados estratégicos
+- **Contrainteligência**: Proteção contra ameaças internas e externas
+- **Análise de Riscos**: Avaliação sistemática de vulnerabilidades
+- **Relatórios de Segurança**: Documentação e acompanhamento de incidentes
+- **Dashboard Executivo**: Painéis de controle com métricas em tempo real
+
+## 🚀 Tecnologias Utilizadas
+
+- **Frontend**: Next.js 15 com TypeScript
+- **Styling**: Tailwind CSS
+- **Banco de Dados**: MySQL (Hostgator)
+- **ORM**: Prisma
+- **Autenticação**: NextAuth.js
+- **IA**: Google Gemini API
+- **Deploy**: Vercel
+- **Controle de Versão**: GitHub
+
+## 🔧 Configuração do Ambiente
+
+### Pré-requisitos
+
+- Node.js 18+
+- NPM ou Yarn
+- Acesso ao banco MySQL
+
+### Instalação
+
+1. Clone o repositório:
+
+```bash
+git clone https://github.com/tborgesdf/federalglobal.git
+cd federalglobal
+```
+
+2. Instale as dependências:
+
+```bash
+npm install
+```
+
+3. Configure as variáveis de ambiente:
+
+```bash
+cp .env.example .env
+```
+
+4. Configure o banco de dados:
+
+```bash
+npx prisma generate
+npx prisma db push
+```
+
+5. Execute o projeto:
 
 ```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## 🏗️ Estrutura do Projeto
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+```
+├── src/
+│   ├── app/                 # App Router (Next.js 13+)
+│   ├── components/          # Componentes reutilizáveis
+│   ├── lib/                 # Utilitários e configurações
+│   └── types/               # Tipos TypeScript
+├── prisma/                  # Schema e migrações do banco
+├── public/                  # Arquivos estáticos
+└── docs/                    # Documentação
+```
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## 📊 Funcionalidades Principais
 
-## Learn More
+### Dashboard Principal
 
-To learn more about Next.js, take a look at the following resources:
+- Métricas de segurança em tempo real
+- Gráficos de tendências e análises
+- Alertas e notificações
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+### Gestão de Usuários
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+- Controle de acesso por níveis (Admin, Manager, Analyst, User)
+- Autenticação segura
+- Histórico de atividades
 
-## Deploy on Vercel
+### Relatórios de Inteligência
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+- Categorização automática
+- Anexos e evidências
+- Workflow de aprovação
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+### Análise de Riscos
+
+- Matriz de riscos dinâmica
+- Scoring automático
+- Recomendações de ação
+
+## 🔒 Segurança
+
+- Criptografia de dados sensíveis
+- Autenticação de dois fatores
+- Logs de auditoria completos
+- Controle de sessões
+
+## 🌐 Deploy
+
+O projeto está configurado para deploy automático no Vercel:
+
+- **URL de Produção**: https://federalglobal.vercel.app
+- **Ambiente de Desenvolvimento**: Configuração local
+
+## 📚 Documentação
+
+- [Manual Técnico](./docs/manual-tecnico.md)
+- [Manual do Usuário](./docs/manual-usuario.md)
+- [API Documentation](./docs/api.md)
+
+## 👨‍💻 Equipe de Desenvolvimento
+
+- **Thiago Borges** - Especialista em Segurança e Inteligência Empresarial
+- **GitHub Copilot** - Assistente de Desenvolvimento
+
+## 📞 Suporte
+
+Para suporte técnico ou dúvidas sobre o sistema:
+
+- Email: suporte@federalglobal.com
+- GitHub Issues: [https://github.com/tborgesdf/federalglobal/issues](https://github.com/tborgesdf/federalglobal/issues)
+
+## 📄 Licença
+
+Este projeto está sob licença proprietária da DeltaFox Solutions.
+
+---
+
+**Federal Global by DeltaFox** - Protegendo o futuro das empresas através da inteligência estratégica.
