@@ -110,7 +110,7 @@ export async function POST(request: NextRequest) {
 
     // Verificar se a conta está bloqueada
     if (recentAttempts?.blockedUntil && recentAttempts.blockedUntil > new Date()) {
-      const timeLeft = Math.ceil((recentAttempts.blockedUntil.getTime() - Date.now()) / (60 * 1000))
+      const timeLeft = Math.ceil((recentAttempts.blockedUntil.getTime() - Date.now()) / (60 * 60 * 1000)) // Horas
       
       // Registrar tentativa em conta bloqueada
       await prisma.loginAttempt.create({
@@ -126,7 +126,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json(
         { 
           error: 'Conta temporariamente bloqueada',
-          message: `Sua conta foi bloqueada devido a múltiplas tentativas de login simultâneo. Tente novamente em ${timeLeft} minutos ou procure o administrador do sistema.`,
+          message: `Sua conta foi bloqueada devido a múltiplas tentativas de login simultâneo. Tente novamente em ${timeLeft} horas ou procure o administrador do sistema.`,
           blockedUntil: recentAttempts.blockedUntil,
           contactAdmin: true
         },
@@ -165,7 +165,7 @@ export async function POST(request: NextRequest) {
 
       // Se já são 3 ou mais tentativas, bloquear a conta
       if (consecutiveFails >= 3) {
-        const blockDuration = 30 * 60 * 1000 // 30 minutos
+        const blockDuration = 24 * 60 * 60 * 1000 // 24 horas
         const blockedUntil = new Date(Date.now() + blockDuration)
         
         // Atualizar o registro de tentativas com o bloqueio

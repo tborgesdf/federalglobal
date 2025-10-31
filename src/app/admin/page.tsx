@@ -58,6 +58,20 @@ export default function AdminDashboard() {
   const [activeTab, setActiveTab] = useState<'overview' | 'users' | 'activity' | 'system'>('overview')
   const [securityAlerts, setSecurityAlerts] = useState<SecurityAlert[]>([])
   const [showAlertsModal, setShowAlertsModal] = useState(false)
+  const [showAddUserModal, setShowAddUserModal] = useState(false)
+  const [addUserLoading, setAddUserLoading] = useState(false)
+  
+  // Estados do formulário de usuário
+  const [newUser, setNewUser] = useState({
+    cpf: '',
+    fullName: '',
+    birthDate: '',
+    email: '',
+    phone: '',
+    role: 'USER' as 'USER' | 'ADMIN',
+    password: '',
+    confirmPassword: ''
+  })
   
   const [stats, setStats] = useState<SystemStats>({
     totalUsers: 245,
@@ -255,6 +269,103 @@ export default function AdminDashboard() {
       console.error('Erro ao reconhecer alerta:', error)
     }
   }
+
+  // Funções para gerenciamento de usuários
+  const handleAddUser = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setAddUserLoading(true)
+
+    try {
+      // Validações
+      if (newUser.password !== newUser.confirmPassword) {
+        alert('As senhas não coincidem!')
+        return
+      }
+
+      if (newUser.password.length < 6) {
+        alert('A senha deve ter pelo menos 6 caracteres!')
+        return
+      }
+
+      // Remover formatação do CPF
+      const cpfNumbers = newUser.cpf.replace(/\D/g, '')
+      
+      const userData = {
+        cpf: cpfNumbers,
+        fullName: newUser.fullName,
+        birthDate: newUser.birthDate,
+        email: newUser.email,
+        phone: newUser.phone,
+        role: newUser.role,
+        password: newUser.password,
+        active: true
+      }
+
+      const response = await fetch('/api/admin/users', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(userData)
+      })
+
+      if (response.ok) {
+        alert('Usuário criado com sucesso!')
+        setShowAddUserModal(false)
+        resetUserForm()
+        // Recarregar estatísticas
+        loadSecurityAlerts()
+      } else {
+        const errorData = await response.json()
+        alert(`Erro ao criar usuário: ${errorData.error || 'Erro desconhecido'}`)
+      }
+    } catch (error) {
+      console.error('Erro ao criar usuário:', error)
+      alert('Erro ao criar usuário. Tente novamente.')
+    } finally {
+      setAddUserLoading(false)
+    }
+  }
+
+  const resetUserForm = () => {
+    setNewUser({
+      cpf: '',
+      fullName: '',
+      birthDate: '',
+      email: '',
+      phone: '',
+      role: 'USER',
+      password: '',
+      confirmPassword: ''
+    })
+  }
+
+  const formatCPF = (value: string) => {
+    const numbers = value.replace(/\D/g, '')
+    if (numbers.length <= 11) {
+      return numbers.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, '$1.$2.$3-$4')
+    }
+    return value
+  }
+
+  const formatPhone = (value: string) => {
+    const numbers = value.replace(/\D/g, '')
+    if (numbers.length <= 11) {
+      return numbers.replace(/(\d{2})(\d{5})(\d{4})/, '($1) $2-$3')
+    }
+    return value
+  }
+
+  // Adicionar listener para abrir modal
+  useEffect(() => {
+    const handleOpenAddUserModal = () => {
+      setShowAddUserModal(true)
+    }
+    
+    window.addEventListener('openAddUserModal', handleOpenAddUserModal)
+    
+    return () => {
+      window.removeEventListener('openAddUserModal', handleOpenAddUserModal)
+    }
+  }, [])
 
   const addRealtimeActivity = () => {
     const activities = [
@@ -709,6 +820,174 @@ export default function AdminDashboard() {
                 <p className="text-slate-400 text-center py-8">Nenhum alerta de segurança pendente</p>
               )}
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal de Adicionar Usuário */}
+      {showAddUserModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg p-6 w-full max-w-md max-h-[90vh] overflow-y-auto">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-xl font-bold text-gray-800">Adicionar Usuário</h2>
+              <button
+                onClick={() => {
+                  setShowAddUserModal(false)
+                  resetUserForm()
+                }}
+                className="text-gray-500 hover:text-gray-700"
+              >
+                ✕
+              </button>
+            </div>
+
+            <form onSubmit={handleAddUser} className="space-y-4">
+              {/* CPF */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  CPF *
+                </label>
+                <input
+                  type="text"
+                  value={newUser.cpf}
+                  onChange={(e) => setNewUser(prev => ({ ...prev, cpf: formatCPF(e.target.value) }))}
+                  placeholder="000.000.000-00"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-black"
+                  required
+                  maxLength={14}
+                />
+              </div>
+
+              {/* Nome Completo */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Nome Completo *
+                </label>
+                <input
+                  type="text"
+                  value={newUser.fullName}
+                  onChange={(e) => setNewUser(prev => ({ ...prev, fullName: e.target.value }))}
+                  placeholder="Nome completo"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-black"
+                  required
+                />
+              </div>
+
+              {/* Data de Nascimento */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Data de Nascimento *
+                </label>
+                <input
+                  type="date"
+                  value={newUser.birthDate}
+                  onChange={(e) => setNewUser(prev => ({ ...prev, birthDate: e.target.value }))}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-black"
+                  required
+                />
+              </div>
+
+              {/* Email */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Email *
+                </label>
+                <input
+                  type="email"
+                  value={newUser.email}
+                  onChange={(e) => setNewUser(prev => ({ ...prev, email: e.target.value }))}
+                  placeholder="email@exemplo.com"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-black"
+                  required
+                />
+              </div>
+
+              {/* Telefone */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Telefone *
+                </label>
+                <input
+                  type="text"
+                  value={newUser.phone}
+                  onChange={(e) => setNewUser(prev => ({ ...prev, phone: formatPhone(e.target.value) }))}
+                  placeholder="(00) 00000-0000"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-black"
+                  required
+                  maxLength={15}
+                />
+              </div>
+
+              {/* Função/Cargo */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Função *
+                </label>
+                <select
+                  value={newUser.role}
+                  onChange={(e) => setNewUser(prev => ({ ...prev, role: e.target.value as 'USER' | 'ADMIN' }))}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-black"
+                  required
+                >
+                  <option value="USER">Usuário</option>
+                  <option value="ADMIN">Administrador</option>
+                </select>
+              </div>
+
+              {/* Senha */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Senha *
+                </label>
+                <input
+                  type="password"
+                  value={newUser.password}
+                  onChange={(e) => setNewUser(prev => ({ ...prev, password: e.target.value }))}
+                  placeholder="Mínimo 6 caracteres"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-black"
+                  required
+                  minLength={6}
+                />
+              </div>
+
+              {/* Confirmar Senha */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Confirmar Senha *
+                </label>
+                <input
+                  type="password"
+                  value={newUser.confirmPassword}
+                  onChange={(e) => setNewUser(prev => ({ ...prev, confirmPassword: e.target.value }))}
+                  placeholder="Confirme a senha"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-black"
+                  required
+                  minLength={6}
+                />
+              </div>
+
+              {/* Botões */}
+              <div className="flex space-x-3 pt-4">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowAddUserModal(false)
+                    resetUserForm()
+                  }}
+                  className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50"
+                  disabled={addUserLoading}
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="submit"
+                  disabled={addUserLoading}
+                  className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50"
+                >
+                  {addUserLoading ? 'Criando...' : 'Criar Usuário'}
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}

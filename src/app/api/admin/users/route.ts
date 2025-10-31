@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
+import { SecurityUtils } from '@/lib/utils/security'
 
+// GET - Listar usuários
 export async function GET(request: NextRequest) {
   try {
     // Verificar autenticação (implementação básica)
@@ -76,6 +78,103 @@ export async function GET(request: NextRequest) {
 
   } catch (error) {
     console.error('Erro ao buscar usuários:', error)
+    return NextResponse.json(
+      { error: 'Erro interno do servidor' },
+      { status: 500 }
+    )
+  }
+}
+
+// POST - Criar novo usuário
+export async function POST(request: NextRequest) {
+  try {
+    const body = await request.json()
+    const { cpf, fullName, birthDate, email, phone, role, password, active = true } = body
+
+    // Validações básicas
+    if (!cpf || !fullName || !birthDate || !email || !phone || !role || !password) {
+      return NextResponse.json(
+        { error: 'Todos os campos são obrigatórios' },
+        { status: 400 }
+      )
+    }
+
+    // Validar CPF
+    if (cpf.length !== 11 || !/^\d+$/.test(cpf)) {
+      return NextResponse.json(
+        { error: 'CPF deve conter exatamente 11 dígitos' },
+        { status: 400 }
+      )
+    }
+
+    // Validar role
+    if (!['USER', 'ADMIN'].includes(role)) {
+      return NextResponse.json(
+        { error: 'Função deve ser USER ou ADMIN' },
+        { status: 400 }
+      )
+    }
+
+    // Verificar se CPF já existe
+    const existingUserByCPF = await prisma.companyUser.findUnique({
+      where: { cpf }
+    })
+
+    if (existingUserByCPF) {
+      return NextResponse.json(
+        { error: 'CPF já cadastrado no sistema' },
+        { status: 409 }
+      )
+    }
+
+    // Verificar se email já existe
+    const existingUserByEmail = await prisma.companyUser.findUnique({
+      where: { email }
+    })
+
+    if (existingUserByEmail) {
+      return NextResponse.json(
+        { error: 'Email já cadastrado no sistema' },
+        { status: 409 }
+      )
+    }
+
+    // Gerar número de protocolo único
+    const protocolNumber = `FG${Date.now().toString().slice(-6)}${Math.floor(Math.random() * 100)}`
+
+    // Criptografar senha
+    const hashedPassword = await SecurityUtils.hashPassword(password)
+
+    // Criar usuário
+    const newUser = await prisma.companyUser.create({
+      data: {
+        cpf,
+        fullName,
+        birthDate: new Date(birthDate),
+        email,
+        phone,
+        role: role as 'USER' | 'ADMIN',
+        password: hashedPassword,
+        protocolNumber,
+        active
+      }
+    })
+
+    // Retornar dados do usuário (sem senha)
+    const { password: _, ...userResponse } = newUser
+
+    return NextResponse.json({
+      success: true,
+      message: 'Usuário criado com sucesso',
+      user: {
+        ...userResponse,
+        id: userResponse.id,
+        createdAt: userResponse.createdAt.toISOString()
+      }
+    }, { status: 201 })
+
+  } catch (error) {
+    console.error('Erro ao criar usuário:', error)
     return NextResponse.json(
       { error: 'Erro interno do servidor' },
       { status: 500 }
