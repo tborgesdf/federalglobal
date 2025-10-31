@@ -379,17 +379,41 @@ export default function AdminUsersPage() {
                             <p className="text-slate-400 text-sm">Navegador</p>
                             <p className="text-white">{selectedUser.lastAccess.deviceCapture.browser}</p>
                           </div>
-                          {selectedUser.lastAccess.deviceCapture.gpsLatitude && (
+                          {selectedUser.lastAccess.deviceCapture.gpsLatitude && selectedUser.lastAccess.deviceCapture.gpsLongitude && (
                             <div>
                               <p className="text-slate-400 text-sm">Localização GPS</p>
                               <p className="text-white">{selectedUser.lastAccess.deviceCapture.deviceCity}, {selectedUser.lastAccess.deviceCapture.deviceCountry}</p>
-                              <a 
-                                href={`https://www.google.com/maps/search/?api=1&query=${selectedUser.lastAccess.deviceCapture.gpsLatitude},${selectedUser.lastAccess.deviceCapture.gpsLongitude}`}
-                                target="_blank"
-                                className="text-blue-400 hover:text-blue-300 text-sm"
-                              >
-                                Ver no Google Maps →
-                              </a>
+                              <p className="text-slate-400 text-xs">
+                                Coordenadas: {selectedUser.lastAccess.deviceCapture.gpsLatitude.toFixed(6)}, {selectedUser.lastAccess.deviceCapture.gpsLongitude.toFixed(6)}
+                              </p>
+                              
+                              {/* Mini Mapa usando OpenStreetMap */}
+                              <div className="mt-2 border border-slate-600 rounded-lg overflow-hidden">
+                                <iframe
+                                  width="100%"
+                                  height="150"
+                                  style={{ border: 0 }}
+                                  loading="lazy"
+                                  src={`https://www.openstreetmap.org/export/embed.html?bbox=${selectedUser.lastAccess.deviceCapture.gpsLongitude - 0.01},${selectedUser.lastAccess.deviceCapture.gpsLatitude - 0.01},${selectedUser.lastAccess.deviceCapture.gpsLongitude + 0.01},${selectedUser.lastAccess.deviceCapture.gpsLatitude + 0.01}&layer=mapnik&marker=${selectedUser.lastAccess.deviceCapture.gpsLatitude},${selectedUser.lastAccess.deviceCapture.gpsLongitude}`}
+                                ></iframe>
+                              </div>
+                              
+                              <div className="flex space-x-2 mt-2">
+                                <a 
+                                  href={`https://www.google.com/maps/search/?api=1&query=${selectedUser.lastAccess.deviceCapture.gpsLatitude},${selectedUser.lastAccess.deviceCapture.gpsLongitude}`}
+                                  target="_blank"
+                                  className="text-blue-400 hover:text-blue-300 text-xs"
+                                >
+                                  🗺️ Google Maps
+                                </a>
+                                <a 
+                                  href={`https://www.openstreetmap.org/?mlat=${selectedUser.lastAccess.deviceCapture.gpsLatitude}&mlon=${selectedUser.lastAccess.deviceCapture.gpsLongitude}&zoom=15`}
+                                  target="_blank"
+                                  className="text-green-400 hover:text-green-300 text-xs"
+                                >
+                                  🌍 OpenStreetMap
+                                </a>
+                              </div>
                             </div>
                           )}
                         </>

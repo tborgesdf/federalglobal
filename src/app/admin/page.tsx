@@ -24,6 +24,22 @@ interface ActivityItem {
   ip?: string
 }
 
+interface SecurityAlert {
+  id: number
+  userId: number
+  alertType: string
+  message: string
+  severity: string
+  createdAt: string
+  user: {
+    id: number
+    fullName: string
+    email: string
+    role: string
+  }
+  details?: Record<string, unknown>
+}
+
 interface User {
   id: number
   name: string
@@ -40,6 +56,8 @@ export default function AdminDashboard() {
   const [isAuthenticated, setIsAuthenticated] = useState(false)
   const [loading, setLoading] = useState(true)
   const [activeTab, setActiveTab] = useState<'overview' | 'users' | 'activity' | 'system'>('overview')
+  const [securityAlerts, setSecurityAlerts] = useState<SecurityAlert[]>([])
+  const [showAlertsModal, setShowAlertsModal] = useState(false)
   
   const [stats, setStats] = useState<SystemStats>({
     totalUsers: 245,
@@ -51,7 +69,7 @@ export default function AdminDashboard() {
     securityLevel: 'MÁXIMA'
   })
 
-  const [recentActivity] = useState<ActivityItem[]>([
+  const [recentActivity, setRecentActivity] = useState<ActivityItem[]>([
     { 
       id: 1, 
       action: 'Login realizado com sucesso', 
@@ -173,6 +191,9 @@ export default function AdminDashboard() {
 
         setIsAuthenticated(true)
         
+        // Carregar alertas de segurança
+        loadSecurityAlerts()
+        
         // Simular atualizações em tempo real
         const interval = setInterval(() => {
           setStats(prev => ({
@@ -180,7 +201,15 @@ export default function AdminDashboard() {
             onlineUsers: Math.floor(Math.random() * 10) + 20,
             totalLogs: prev.totalLogs + Math.floor(Math.random() * 5)
           }))
-        }, 10000)
+          
+          // Recarregar alertas a cada 30 segundos
+          loadSecurityAlerts()
+          
+          // Atualizar atividades recentes a cada 15 segundos
+          if (Math.random() > 0.7) {
+            addRealtimeActivity()
+          }
+        }, 15000)
 
         return () => clearInterval(interval)
       } catch (error) {
@@ -197,6 +226,72 @@ export default function AdminDashboard() {
   const handleLogout = () => {
     document.cookie = 'session_token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;'
     router.push('/admin/login')
+  }
+
+  const loadSecurityAlerts = async () => {
+    try {
+      const response = await fetch('/api/admin/security-alerts')
+      if (response.ok) {
+        const data = await response.json()
+        setSecurityAlerts(data.alerts || [])
+      }
+    } catch (error) {
+      console.error('Erro ao carregar alertas:', error)
+    }
+  }
+
+  const acknowledgeAlert = async (alertId: number) => {
+    try {
+      const response = await fetch('/api/admin/security-alerts', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ alertId, userId: 1 }) // TODO: pegar ID do usuário logado
+      })
+
+      if (response.ok) {
+        setSecurityAlerts(prev => prev.filter(alert => alert.id !== alertId))
+      }
+    } catch (error) {
+      console.error('Erro ao reconhecer alerta:', error)
+    }
+  }
+
+  const addRealtimeActivity = () => {
+    const activities = [
+      {
+        id: Date.now(),
+        action: 'Acesso ao painel de usuários',
+        user: 'Maria Silva Santos',
+        company: 'TechCorp LTDA',
+        time: 'Agora',
+        type: 'info' as const,
+        location: 'São Paulo, SP',
+        ip: '177.45.123.78'
+      },
+      {
+        id: Date.now() + 1,
+        action: 'Logout realizado',
+        user: 'Pedro Costa Ferreira',
+        company: 'Global Tech Industries',
+        time: 'Agora',
+        type: 'success' as const,
+        location: 'Rio de Janeiro, RJ',
+        ip: '201.23.156.89'
+      },
+      {
+        id: Date.now() + 2,
+        action: 'Tentativa de acesso negado',
+        user: 'Ana Clara Mendes',
+        company: 'SecureData Corp',
+        time: 'Agora',
+        type: 'warning' as const,
+        location: 'Brasília, DF',
+        ip: '186.67.89.154'
+      }
+    ]
+
+    const newActivity = activities[Math.floor(Math.random() * activities.length)]
+    setRecentActivity(prev => [newActivity, ...prev.slice(0, 9)]) // Manter apenas 10 itens
   }
 
   if (loading) {
@@ -223,6 +318,20 @@ export default function AdminDashboard() {
           <p className="text-slate-400">Federal Global by DeltaFox - Sistema de Inteligência</p>
         </div>
         <div className="flex items-center space-x-4">
+          {/* Indicador de Alertas de Segurança */}
+          {securityAlerts.length > 0 && (
+            <button
+              onClick={() => setShowAlertsModal(true)}
+              className="relative bg-orange-600 hover:bg-orange-700 text-white px-4 py-2 rounded-lg text-sm transition-colors flex items-center"
+            >
+              <span className="mr-2">⚠️</span>
+              Alertas ({securityAlerts.length})
+              <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">
+                {securityAlerts.length}
+              </span>
+            </button>
+          )}
+          
           <div className="text-right">
             <p className="text-sm text-white">Thiago Ferreira Alves e Borges</p>
             <p className="text-xs text-green-400">Super Administrador</p>
@@ -524,6 +633,81 @@ export default function AdminDashboard() {
                   <span className="text-slate-400">30/10/2025</span>
                 </div>
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+      
+      {/* Modal de Alertas de Segurança */}
+      {showAlertsModal && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-slate-800 rounded-xl border border-slate-700 max-w-4xl w-full max-h-[90vh] overflow-y-auto">
+            <div className="flex justify-between items-center p-6 border-b border-slate-700">
+              <h2 className="text-2xl font-bold text-white flex items-center">
+                ⚠️ Alertas de Segurança ({securityAlerts.length})
+              </h2>
+              <button 
+                onClick={() => setShowAlertsModal(false)}
+                className="text-gray-400 hover:text-white text-2xl"
+              >
+                ×
+              </button>
+            </div>
+            
+            <div className="p-6">
+              {securityAlerts.length > 0 ? (
+                <div className="space-y-4">
+                  {securityAlerts.map((alert) => (
+                    <div key={alert.id} className={`p-4 rounded-lg border-l-4 ${
+                      alert.severity === 'CRITICAL' ? 'bg-red-900/20 border-red-500' :
+                      alert.severity === 'HIGH' ? 'bg-orange-900/20 border-orange-500' :
+                      alert.severity === 'MEDIUM' ? 'bg-yellow-900/20 border-yellow-500' :
+                      'bg-blue-900/20 border-blue-500'
+                    }`}>
+                      <div className="flex justify-between items-start">
+                        <div className="flex-1">
+                          <div className="flex items-center mb-2">
+                            <span className={`px-2 py-1 text-xs rounded-full mr-3 ${
+                              alert.severity === 'CRITICAL' ? 'bg-red-500 text-white' :
+                              alert.severity === 'HIGH' ? 'bg-orange-500 text-white' :
+                              alert.severity === 'MEDIUM' ? 'bg-yellow-500 text-black' :
+                              'bg-blue-500 text-white'
+                            }`}>
+                              {alert.severity}
+                            </span>
+                            <span className="text-slate-400 text-sm">
+                              {new Date(alert.createdAt).toLocaleString('pt-BR')}
+                            </span>
+                          </div>
+                          
+                          <h3 className="text-white font-medium mb-1">{alert.message}</h3>
+                          <p className="text-slate-300 text-sm">
+                            Usuário: {alert.user.fullName} ({alert.user.role})
+                          </p>
+                          
+                          {alert.details && (
+                            <div className="mt-2 text-xs text-slate-400">
+                              <p>Tipo: {alert.alertType}</p>
+                              {typeof alert.details === 'object' && alert.details !== null && 'currentDevice' in alert.details && (
+                                <p>Dispositivo atual: {String((alert.details as any).currentDevice?.location || 'N/A')}</p>
+                              )}
+                            </div>
+                          )}
+                        </div>
+                        
+                        <button
+                          onClick={() => acknowledgeAlert(alert.id)}
+                          className="bg-green-600 hover:bg-green-700 text-white px-3 py-1 rounded text-sm"
+                        >
+                          Reconhecer
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-slate-400 text-center py-8">Nenhum alerta de segurança pendente</p>
+              )}
             </div>
           </div>
         </div>

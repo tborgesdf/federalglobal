@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getDomainContext } from '../../../../lib/utils/domain'
 import { LogService } from '../../../../lib/utils/logger'
 import { CompanyUserService } from '@/lib/services/companyUserService'
+import { prisma } from '@/lib/prisma'
 
 interface LoginRequest {
   cpf: string
@@ -99,6 +100,56 @@ export async function POST(request: NextRequest) {
       )
     }
 
+    // Capturar dados de rede e dispositivo para uso nas verificações
+    const { networkData, deviceData } = await LogService.captureFullAccessData(
+      request, 
+      { lat: gpsData.latitude, lng: gpsData.longitude }
+    )
+
+    // Verificar se já existe uma sessão ativa para este usuário
+    const existingSession = await prisma.activeSession.findFirst({
+      where: {
+        userId: user.id,
+        isActive: true,
+        lastActivity: {
+          gte: new Date(Date.now() - 15 * 60 * 1000) // Últimos 15 minutos
+        }
+      }
+    })
+
+    // Se existe sessão ativa em outro dispositivo
+    if (existingSession) {
+      // Criar alerta de segurança
+      await prisma.securityAlert.create({
+        data: {
+          userId: user.id,
+          alertType: 'CONCURRENT_SESSION',
+          message: `Tentativa de login simultâneo detectada para ${user.fullName}`,
+          details: JSON.stringify({
+            currentDevice: {
+              ip: networkData.ipAddress,
+              userAgent: deviceInfo?.userAgent || request.headers.get('user-agent'),
+              location: `${deviceData.deviceCity}, ${deviceData.deviceCountry}`
+            },
+            existingSession: {
+              ip: existingSession.ipAddress,
+              lastActivity: existingSession.lastActivity,
+              sessionToken: existingSession.sessionToken.substring(0, 10) + '...'
+            }
+          }),
+          severity: 'HIGH'
+        }
+      })
+
+      // Invalidar sessão anterior
+      await prisma.activeSession.update({
+        where: { id: existingSession.id },
+        data: { isActive: false }
+      })
+
+      console.log(`⚠️ Sessão simultânea detectada para usuário ${user.id}. Sessão anterior invalidada.`)
+    }
+
     // Capturar dados completos do acesso
     let accessLogId: number | null = null
     
@@ -117,12 +168,6 @@ export async function POST(request: NextRequest) {
       } else {
         accessType = 'CLIENT_PORTAL'
       }
-
-      // Capturar dados de rede e dispositivo
-      const { networkData, deviceData } = await LogService.captureFullAccessData(
-        request, 
-        { lat: gpsData.latitude, lng: gpsData.longitude }
-      )
 
       // Adicionar informações extras do dispositivo se fornecidas
       if (deviceInfo) {
@@ -151,6 +196,30 @@ export async function POST(request: NextRequest) {
       // Continuar com o login mesmo se a captura falhar
     }
 
+    // Gerar token de sessão
+    const sessionToken = generateSessionToken()
+
+    // Criar nova sessão ativa
+    await prisma.activeSession.create({
+      data: {
+        userId: user.id,
+        sessionToken,
+        ipAddress: networkData.ipAddress,
+        userAgent: deviceInfo?.userAgent || request.headers.get('user-agent') || '',
+        deviceInfo: JSON.stringify({
+          operatingSystem: deviceData.operatingSystem,
+          browser: deviceData.browser,
+          deviceType: deviceData.deviceType,
+          deviceModel: deviceData.deviceModel,
+          deviceBrand: deviceData.deviceBrand,
+          connectionType: deviceData.connectionType,
+          networkType: deviceData.networkType
+        }),
+        lastActivity: new Date(),
+        isActive: true
+      }
+    })
+
     // Login bem-sucedido
     const loginData = {
       user: {
@@ -161,7 +230,7 @@ export async function POST(request: NextRequest) {
         cpf: cleanCpf
       },
       session: {
-        token: generateSessionToken(),
+        token: sessionToken,
         expiresAt: new Date(Date.now() + 8 * 60 * 60 * 1000), // 8 horas
         domain: domainContext.hostname,
         type: domainContext.type,

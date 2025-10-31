@@ -19,6 +19,11 @@ export interface DeviceData {
   operatingSystem: string;
   browser: string;
   userAgent: string;
+  deviceType: string; // mobile, tablet, desktop
+  deviceModel?: string;
+  deviceBrand?: string;
+  connectionType: string;
+  networkType?: string; // 2G, 3G, 4G, 5G
   navigationData?: Record<string, unknown>;
   gpsLatitude?: number;
   gpsLongitude?: number;
@@ -73,10 +78,19 @@ export class CaptureUtils {
     const userAgent = request.headers.get('user-agent') || '';
     const geoData = gpsCoords ? await this.getLocationFromGPS(gpsCoords.lat, gpsCoords.lng) : null;
     
+    // Detectar dispositivo e conexão
+    const deviceInfo = this.detectAdvancedDeviceInfo(userAgent);
+    const connectionInfo = this.detectAdvancedConnectionType(request);
+    
     const deviceData: DeviceData = {
-      operatingSystem: this.detectOS(userAgent),
-      browser: this.detectBrowser(userAgent),
+      operatingSystem: deviceInfo.os,
+      browser: deviceInfo.browser,
       userAgent,
+      deviceType: deviceInfo.deviceType,
+      deviceModel: deviceInfo.model,
+      deviceBrand: deviceInfo.brand,
+      connectionType: connectionInfo.type,
+      networkType: connectionInfo.networkType,
       deviceCountry: geoData?.country || 'Unknown',
       deviceCity: geoData?.city || 'Unknown',
       deviceState: geoData?.state || 'Unknown'
@@ -139,16 +153,8 @@ export class CaptureUtils {
 
   // Detectar tipo de conexão
   private static detectConnectionType(request: Request): string {
-    const userAgent = request.headers.get('user-agent') || '';
-    
-    if (userAgent.includes('Mobile')) {
-      if (userAgent.includes('5G')) return '5G';
-      if (userAgent.includes('4G')) return '4G';
-      if (userAgent.includes('3G')) return '3G';
-      return 'Mobile';
-    }
-    
-    return 'Wi-Fi';
+    const detectionResult = this.detectAdvancedConnectionType(request);
+    return detectionResult.type;
   }
 
   // Detectar sistema operacional
@@ -169,6 +175,171 @@ export class CaptureUtils {
     if (userAgent.includes('Edg')) return 'Edge';
     if (userAgent.includes('Opera')) return 'Opera';
     return 'Unknown';
+  }
+
+  // Detectar informações avançadas do dispositivo
+  private static detectAdvancedDeviceInfo(userAgent: string) {
+    const info = {
+      os: 'Unknown',
+      browser: 'Unknown',
+      deviceType: 'Unknown',
+      brand: 'Unknown',
+      model: 'Unknown'
+    };
+
+    // Detectar OS
+    if (userAgent.includes('Android')) {
+      info.os = 'Android';
+      info.deviceType = 'Mobile';
+      
+      // Detectar versão do Android
+      const androidMatch = userAgent.match(/Android\s([0-9\.]+)/);
+      if (androidMatch) {
+        info.os = `Android ${androidMatch[1]}`;
+      }
+      
+      // Detectar marca e modelo
+      const brands = [
+        { name: 'Samsung', patterns: ['Samsung', 'SM-', 'GT-'] },
+        { name: 'Xiaomi', patterns: ['Xiaomi', 'Mi ', 'Redmi'] },
+        { name: 'Huawei', patterns: ['Huawei', 'Honor'] },
+        { name: 'LG', patterns: ['LG-'] },
+        { name: 'Motorola', patterns: ['Motorola', 'Moto'] },
+        { name: 'Sony', patterns: ['Sony'] },
+        { name: 'OnePlus', patterns: ['OnePlus'] },
+        { name: 'Oppo', patterns: ['OPPO'] },
+        { name: 'Vivo', patterns: ['vivo'] }
+      ];
+
+      for (const brand of brands) {
+        for (const pattern of brand.patterns) {
+          if (userAgent.includes(pattern)) {
+            info.brand = brand.name;
+            
+            // Extrair modelo
+            const modelRegex = new RegExp(`${pattern}([^\\);]+)`, 'i');
+            const modelMatch = userAgent.match(modelRegex);
+            if (modelMatch) {
+              info.model = modelMatch[1].trim();
+            }
+            break;
+          }
+        }
+        if (info.brand !== 'Unknown') break;
+      }
+    } else if (userAgent.includes('iPhone')) {
+      info.os = 'iOS';
+      info.deviceType = 'Mobile';
+      info.brand = 'Apple';
+      
+      const iPhoneMatch = userAgent.match(/iPhone OS ([0-9_]+)/);
+      if (iPhoneMatch) {
+        info.os = `iOS ${iPhoneMatch[1].replace(/_/g, '.')}`;
+      }
+      
+      // Detectar modelo do iPhone
+      if (userAgent.includes('iPhone14')) info.model = 'iPhone 14';
+      else if (userAgent.includes('iPhone13')) info.model = 'iPhone 13';
+      else if (userAgent.includes('iPhone12')) info.model = 'iPhone 12';
+      else if (userAgent.includes('iPhone11')) info.model = 'iPhone 11';
+      else info.model = 'iPhone';
+      
+    } else if (userAgent.includes('iPad')) {
+      info.os = 'iOS';
+      info.deviceType = 'Tablet';
+      info.brand = 'Apple';
+      info.model = 'iPad';
+      
+    } else if (userAgent.includes('Windows NT')) {
+      info.deviceType = 'Desktop';
+      const winMatch = userAgent.match(/Windows NT ([0-9\.]+)/);
+      if (winMatch) {
+        const version = winMatch[1];
+        if (version === '10.0') info.os = 'Windows 10/11';
+        else if (version === '6.3') info.os = 'Windows 8.1';
+        else if (version === '6.2') info.os = 'Windows 8';
+        else if (version === '6.1') info.os = 'Windows 7';
+        else info.os = `Windows NT ${version}`;
+      } else {
+        info.os = 'Windows';
+      }
+      
+    } else if (userAgent.includes('Mac OS X')) {
+      info.os = 'macOS';
+      info.deviceType = 'Desktop';
+      info.brand = 'Apple';
+      info.model = 'Mac';
+      
+    } else if (userAgent.includes('Linux')) {
+      info.os = 'Linux';
+      info.deviceType = 'Desktop';
+    }
+
+    // Detectar browser
+    if (userAgent.includes('Chrome') && !userAgent.includes('Edg')) {
+      info.browser = 'Chrome';
+      const chromeMatch = userAgent.match(/Chrome\/([0-9\.]+)/);
+      if (chromeMatch) {
+        info.browser = `Chrome ${chromeMatch[1]}`;
+      }
+    } else if (userAgent.includes('Firefox')) {
+      info.browser = 'Firefox';
+      const firefoxMatch = userAgent.match(/Firefox\/([0-9\.]+)/);
+      if (firefoxMatch) {
+        info.browser = `Firefox ${firefoxMatch[1]}`;
+      }
+    } else if (userAgent.includes('Safari') && !userAgent.includes('Chrome')) {
+      info.browser = 'Safari';
+      const safariMatch = userAgent.match(/Version\/([0-9\.]+)/);
+      if (safariMatch) {
+        info.browser = `Safari ${safariMatch[1]}`;
+      }
+    } else if (userAgent.includes('Edg')) {
+      info.browser = 'Edge';
+      const edgeMatch = userAgent.match(/Edg\/([0-9\.]+)/);
+      if (edgeMatch) {
+        info.browser = `Edge ${edgeMatch[1]}`;
+      }
+    }
+
+    return info;
+  }
+
+  // Detectar tipo de conexão avançado
+  private static detectAdvancedConnectionType(request: Request) {
+    const userAgent = request.headers.get('user-agent') || '';
+    const connectionHeader = request.headers.get('connection') || '';
+    
+    const info = {
+      type: 'Unknown',
+      networkType: undefined as string | undefined
+    };
+
+    // Verificar se é mobile
+    if (userAgent.includes('Mobile') || userAgent.includes('Android') || userAgent.includes('iPhone')) {
+      // Para dispositivos móveis, tentar detectar o tipo de rede
+      if (userAgent.includes('5G')) {
+        info.type = 'Cellular';
+        info.networkType = '5G';
+      } else if (userAgent.includes('4G') || userAgent.includes('LTE')) {
+        info.type = 'Cellular';
+        info.networkType = '4G/LTE';
+      } else if (userAgent.includes('3G')) {
+        info.type = 'Cellular';
+        info.networkType = '3G';
+      } else if (userAgent.includes('2G') || userAgent.includes('EDGE')) {
+        info.type = 'Cellular';
+        info.networkType = '2G/EDGE';
+      } else {
+        // Se não conseguiu detectar, assumir WiFi em dispositivo móvel
+        info.type = 'WiFi';
+      }
+    } else {
+      // Para desktop, assumir WiFi/Ethernet
+      info.type = 'WiFi/Ethernet';
+    }
+
+    return info;
   }
 
   // Obter localização por GPS (API gratuita com fallback)

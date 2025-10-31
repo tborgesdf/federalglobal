@@ -13,6 +13,44 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+// Modelo para controle de sessões ativas
+model ActiveSession {
+  id              Int       @id @default(autoincrement())
+  userId          Int
+  sessionToken    String    @unique
+  ipAddress       String
+  userAgent       String    @db.Text
+  deviceInfo      String?   @db.Text // JSON com informações do dispositivo
+  lastActivity    DateTime  @default(now())
+  createdAt       DateTime  @default(now())
+  isActive        Boolean   @default(true)
+  
+  // Relacionamento
+  user            CompanyUser @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("active_sessions")
+}
+
+// Modelo para alertas de segurança
+model SecurityAlert {
+  id              Int       @id @default(autoincrement())
+  userId          Int
+  alertType       SecurityAlertType
+  message         String    @db.Text
+  details         String?   @db.Text // JSON com detalhes do alerta
+  severity        AlertSeverity @default(MEDIUM)
+  acknowledged    Boolean   @default(false)
+  acknowledgedBy  Int?
+  acknowledgedAt  DateTime?
+  createdAt       DateTime  @default(now())
+  
+  // Relacionamentos
+  user            CompanyUser @relation(fields: [userId], references: [id])
+  acknowledgedByUser CompanyUser? @relation("AcknowledgedAlerts", fields: [acknowledgedBy], references: [id])
+
+  @@map("security_alerts")
+}
+
 // Modelo para usuários da empresa (Super Admin, Admin, Users)
 model CompanyUser {
   id              Int      @id @default(autoincrement())
@@ -32,6 +70,9 @@ model CompanyUser {
   // Relacionamentos
   accessLogs      AccessLog[]
   actionLogs      ActionLog[]
+  activeSessions  ActiveSession[]
+  securityAlerts  SecurityAlert[]
+  acknowledgedAlerts SecurityAlert[] @relation("AcknowledgedAlerts")
   createdUsers    CompanyUser[] @relation("UserCreator")
   createdBy       CompanyUser?  @relation("UserCreator", fields: [createdById], references: [id])
   createdById     Int?
@@ -243,5 +284,21 @@ enum AlertType {
   INFO
   WARNING
   ERROR
+  CRITICAL
+}
+
+enum SecurityAlertType {
+  MULTIPLE_LOGIN_ATTEMPT
+  SUSPICIOUS_LOCATION
+  UNUSUAL_DEVICE
+  CONCURRENT_SESSION
+  FAILED_LOGIN_ATTEMPTS
+  GPS_SPOOFING
+}
+
+enum AlertSeverity {
+  LOW
+  MEDIUM
+  HIGH
   CRITICAL
 }
