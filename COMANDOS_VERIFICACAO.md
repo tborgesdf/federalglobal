@@ -7,7 +7,9 @@
 ```cmd
 nslookup -type=CNAME federalglobal.deltafoxconsult.com.br
 ```
-**Resultado esperado:** 
+
+**Resultado esperado:**
+
 ```
 federalglobal.deltafoxconsult.com.br canonical name = cname.vercel-dns.com
 ```
@@ -15,7 +17,9 @@ federalglobal.deltafoxconsult.com.br canonical name = cname.vercel-dns.com
 ```cmd
 nslookup -type=CNAME admin.federalglobal.deltafoxconsult.com.br
 ```
-**Resultado esperado:** 
+
+**Resultado esperado:**
+
 ```
 admin.federalglobal.deltafoxconsult.com.br canonical name = cname.vercel-dns.com
 ```
@@ -25,7 +29,9 @@ admin.federalglobal.deltafoxconsult.com.br canonical name = cname.vercel-dns.com
 ```cmd
 nslookup federalglobal.deltafoxconsult.com.br
 ```
-**Resultado esperado:** 
+
+**Resultado esperado:**
+
 ```
 Nome: federalglobal.deltafoxconsult.com.br
 Endereços: 76.76.19.61 (ou IP similar)
@@ -34,7 +40,9 @@ Endereços: 76.76.19.61 (ou IP similar)
 ```cmd
 nslookup admin.federalglobal.deltafoxconsult.com.br
 ```
-**Resultado esperado:** 
+
+**Resultado esperado:**
+
 ```
 Nome: admin.federalglobal.deltafoxconsult.com.br
 Endereços: 76.76.19.61 (ou IP similar)
@@ -45,7 +53,9 @@ Endereços: 76.76.19.61 (ou IP similar)
 ```cmd
 ping federalglobal.deltafoxconsult.com.br
 ```
-**Resultado esperado:** 
+
+**Resultado esperado:**
+
 ```
 Fazendo ping federalglobal.deltafoxconsult.com.br [IP] com 32 bytes de dados:
 Resposta de [IP]: bytes=32 tempo=XXXms TTL=XX
@@ -60,7 +70,9 @@ ping admin.federalglobal.deltafoxconsult.com.br
 ```cmd
 curl -I https://federalglobal.deltafoxconsult.com.br
 ```
-**Resultado esperado:** 
+
+**Resultado esperado:**
+
 ```
 HTTP/2 200
 ```
@@ -76,15 +88,18 @@ curl -I https://admin.federalglobal.deltafoxconsult.com.br
 ### Para executar o script completo:
 
 1. **Abra PowerShell como Administrador**
+
    - Pressione `Windows + X`
    - Clique em "Windows PowerShell (Administrador)"
 
 2. **Navegue até a pasta do projeto:**
+
 ```powershell
 cd "c:\Users\Thiago Borges\Documents\Projetos\produtos\FederalGlobal"
 ```
 
 3. **Execute o script de verificação:**
+
 ```powershell
 powershell -ExecutionPolicy Bypass -File scripts\verificar-sistema.ps1
 ```
@@ -104,18 +119,21 @@ powershell -ExecutionPolicy Bypass -File scripts\verificar-sistema.ps1
 ### Sites para verificar DNS externamente:
 
 #### 1. DNS Checker:
+
 - **Acesse:** https://dnschecker.org
 - **Digite:** `federalglobal.deltafoxconsult.com.br`
 - **Tipo:** `CNAME`
 - **Resultado esperado:** Verde em múltiplos locais
 
 #### 2. What's My DNS:
+
 - **Acesse:** https://whatsmydns.net
 - **Digite o domínio**
 - **Tipo:** `CNAME`
 - **Resultado esperado:** Propagação global verde
 
 #### 3. MX Toolbox:
+
 - **Acesse:** https://mxtoolbox.com/DNSLookup.aspx
 - **Digite:** `federalglobal.deltafoxconsult.com.br`
 - **Resultado esperado:** Retorna IP do Vercel
@@ -129,6 +147,7 @@ powershell -ExecutionPolicy Bypass -File scripts\verificar-sistema.ps1
 1. **Abra CMD** (Windows + R, digite `cmd`, Enter)
 
 2. **Cole este comando:**
+
 ```cmd
 nslookup federalglobal.deltafoxconsult.com.br && nslookup admin.federalglobal.deltafoxconsult.com.br
 ```

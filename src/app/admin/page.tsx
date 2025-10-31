@@ -224,7 +224,7 @@ export default function AdminDashboard() {
         </div>
         <div className="flex items-center space-x-4">
           <div className="text-right">
-            <p className="text-sm text-white">Thiago Borges</p>
+            <p className="text-sm text-white">Thiago Ferreira Alves e Borges</p>
             <p className="text-xs text-green-400">Super Administrador</p>
           </div>
           <button 
