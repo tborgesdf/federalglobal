@@ -36,6 +36,15 @@ export default function AdminLogin() {
         )
       })
 
+      // Capturar informações do dispositivo
+      const deviceInfo = {
+        userAgent: navigator.userAgent,
+        platform: navigator.platform,
+        language: navigator.language,
+        screenResolution: `${screen.width}x${screen.height}`,
+        timezone: Intl.DateTimeFormat().resolvedOptions().timeZone
+      }
+
       // Fazer login via API
       const response = await fetch('/api/auth/domain-login', {
         method: 'POST',
@@ -45,7 +54,8 @@ export default function AdminLogin() {
         body: JSON.stringify({
           cpf: formData.cpf,
           password: formData.password,
-          gpsData
+          gpsData,
+          deviceInfo
         })
       })
 

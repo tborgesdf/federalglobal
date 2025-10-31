@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getDomainContext } from '../../../../lib/utils/domain'
-import { logAction } from '../../../../lib/utils/logger'
+import { LogService } from '../../../../lib/utils/logger'
 import { CompanyUserService } from '@/lib/services/companyUserService'
 
 interface LoginRequest {
@@ -11,13 +11,20 @@ interface LoginRequest {
     longitude: number
     accuracy: number
   }
+  deviceInfo?: {
+    userAgent: string
+    platform: string
+    language: string
+    screenResolution: string
+    timezone: string
+  }
 }
 
 export async function POST(request: NextRequest) {
   try {
     const domainContext = getDomainContext(request.headers.get('host') || undefined)
     const body: LoginRequest = await request.json()
-    const { cpf, password, gpsData } = body
+    const { cpf, password, gpsData, deviceInfo } = body
 
     // Validação básica
     if (!cpf || !password) {
@@ -36,19 +43,11 @@ export async function POST(request: NextRequest) {
     console.log(`   Senha: ${password}`)
     console.log(`   Domain: ${domainContext.hostname}`)
     console.log(`   IsAdmin: ${domainContext.isAdmin}`)
+    console.log(`   GPS Data:`, gpsData)
+    console.log(`   Device Info:`, deviceInfo)
 
     // Validar GPS (obrigatório)
     if (!gpsData || !gpsData.latitude || !gpsData.longitude) {
-      await logAction({
-        action: 'login_blocked_no_gps',
-        details: { 
-          cpf: cleanCpf,
-          domain: domainContext.hostname,
-          type: domainContext.type
-        },
-        status: 'warning'
-      })
-
       return NextResponse.json(
         { error: 'GPS obrigatório para acesso ao sistema' },
         { status: 403 }
@@ -79,17 +78,6 @@ export async function POST(request: NextRequest) {
     } catch (error) {
       console.error('❌ Erro ao verificar login:', error)
       
-      await logAction({
-        action: 'login_failed',
-        details: { 
-          cpf: cleanCpf,
-          domain: domainContext.hostname,
-          type: domainContext.type,
-          reason: 'database_error'
-        },
-        status: 'error'
-      })
-
       return NextResponse.json(
         { error: 'Erro de conexão com o banco de dados' },
         { status: 500 }
@@ -97,17 +85,6 @@ export async function POST(request: NextRequest) {
     }
 
     if (!user) {
-      await logAction({
-        action: 'login_failed',
-        details: { 
-          cpf: cleanCpf,
-          domain: domainContext.hostname,
-          type: domainContext.type,
-          reason: 'invalid_credentials'
-        },
-        status: 'warning'
-      })
-
       return NextResponse.json(
         { error: 'CPF ou senha inválidos' },
         { status: 401 }
@@ -116,22 +93,62 @@ export async function POST(request: NextRequest) {
 
     // Verificar se o usuário tem permissão para acessar este domínio
     if (domainContext.isAdmin && !['ADMIN', 'SUPER_ADMIN'].includes(user.role)) {
-      await logAction({
-        action: 'login_blocked_insufficient_role',
-        details: { 
-          cpf: cleanCpf,
-          domain: domainContext.hostname,
-          type: domainContext.type,
-          userRole: user.role,
-          requiredRoles: requiredRole
-        },
-        status: 'warning'
-      })
-
       return NextResponse.json(
         { error: 'Sem permissão para acessar o painel administrativo' },
         { status: 403 }
       )
+    }
+
+    // Capturar dados completos do acesso
+    let accessLogId: number | null = null
+    
+    try {
+      console.log('🔍 Capturando dados completos do acesso...')
+      
+      // Determinar tipo de acesso
+      let accessType: 'SUPER_ADMIN_DASHBOARD' | 'ADMIN_DASHBOARD' | 'USER_DASHBOARD' | 'CLIENT_PORTAL'
+      
+      if (user.role === 'SUPER_ADMIN') {
+        accessType = 'SUPER_ADMIN_DASHBOARD'
+      } else if (user.role === 'ADMIN') {
+        accessType = 'ADMIN_DASHBOARD' 
+      } else if (domainContext.isAdmin) {
+        accessType = 'USER_DASHBOARD'
+      } else {
+        accessType = 'CLIENT_PORTAL'
+      }
+
+      // Capturar dados de rede e dispositivo
+      const { networkData, deviceData } = await LogService.captureFullAccessData(
+        request, 
+        { lat: gpsData.latitude, lng: gpsData.longitude }
+      )
+
+      // Adicionar informações extras do dispositivo se fornecidas
+      if (deviceInfo) {
+        deviceData.navigationData = {
+          platform: deviceInfo.platform,
+          language: deviceInfo.language,
+          screenResolution: deviceInfo.screenResolution,
+          timezone: deviceInfo.timezone,
+          timestamp: new Date().toISOString()
+        }
+      }
+
+      // Criar log de acesso com dados completos
+      accessLogId = await LogService.createAccessLog({
+        userId: user.id,
+        accessType,
+        ipAddress: networkData.ipAddress,
+        successful: true,
+        networkData,
+        deviceData
+      })
+
+      console.log(`✅ Dados capturados e salvos no AccessLog ID: ${accessLogId}`)
+    } catch (captureError) {
+      console.error('⚠️ Erro ao capturar dados do acesso:', captureError)
+      // Continuar com o login mesmo se a captura falhar
     }
 
     // Login bem-sucedido
@@ -147,7 +164,8 @@ export async function POST(request: NextRequest) {
         token: generateSessionToken(),
         expiresAt: new Date(Date.now() + 8 * 60 * 60 * 1000), // 8 horas
         domain: domainContext.hostname,
-        type: domainContext.type
+        type: domainContext.type,
+        accessLogId
       },
       gps: gpsData,
       context: {
@@ -159,19 +177,6 @@ export async function POST(request: NextRequest) {
                    domainContext.isAdmin ? '/admin' : '/client/dashboard'
       }
     }
-
-    await logAction({
-      action: 'login_success',
-      details: { 
-        userId: user.id,
-        cpf: cleanCpf,
-        domain: domainContext.hostname,
-        type: domainContext.type,
-        role: user.role,
-        gps: gpsData
-      },
-      status: 'success'
-    })
 
     // Configurar cookie de sessão
     const response = NextResponse.json({
@@ -196,15 +201,7 @@ export async function POST(request: NextRequest) {
     return response
 
   } catch (error) {
-    await logAction({
-      action: 'login_error',
-      details: { 
-        error: error instanceof Error ? error.message : 'Unknown error',
-        hostname: request.headers.get('host')
-      },
-      status: 'error'
-    })
-
+    console.error('❌ Erro interno no login:', error)
     return NextResponse.json(
       { error: 'Erro interno do servidor' },
       { status: 500 }

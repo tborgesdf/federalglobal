@@ -39,9 +39,9 @@ export default function SuperAdminSelection() {
   }, [router])
 
   const handleAdminPanel = () => {
-    // Salvar escolha e redirecionar para painel administrativo
+    // Salvar escolha e redirecionar para administração interna (gestão de usuários)
     sessionStorage.setItem('federal_global_panel_type', 'admin')
-    router.push('/admin/dashboard')
+    router.push('/admin/users')
   }
 
   const handleClientPanel = () => {
