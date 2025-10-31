@@ -388,8 +388,19 @@ export async function POST(request: NextRequest) {
 
   } catch (error) {
     console.error('❌ Erro interno no login:', error)
+    
+    // Log detalhado do erro para debug
+    console.error('Stack trace:', error instanceof Error ? error.stack : error)
+    console.error('Error message:', error instanceof Error ? error.message : String(error))
+    
     return NextResponse.json(
-      { error: 'Erro interno do servidor' },
+      { 
+        error: 'Erro interno do servidor',
+        debug: process.env.NODE_ENV === 'development' ? {
+          message: error instanceof Error ? error.message : String(error),
+          stack: error instanceof Error ? error.stack : undefined
+        } : undefined
+      },
       { status: 500 }
     )
   }
