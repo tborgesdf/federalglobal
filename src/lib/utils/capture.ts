@@ -308,7 +308,6 @@ export class CaptureUtils {
   // Detectar tipo de conexão avançado
   private static detectAdvancedConnectionType(request: Request) {
     const userAgent = request.headers.get('user-agent') || '';
-    const connectionHeader = request.headers.get('connection') || '';
     
     const info = {
       type: 'Unknown',

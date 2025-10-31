@@ -13,6 +13,25 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+// Modelo para controle de tentativas de login
+model LoginAttempt {
+  id              Int       @id @default(autoincrement())
+  userId          Int
+  ipAddress       String
+  userAgent       String    @db.Text
+  attemptType     LoginAttemptType
+  successful      Boolean   @default(false)
+  blockedUntil    DateTime?
+  consecutiveFails Int      @default(0)
+  lastFailedAt    DateTime?
+  createdAt       DateTime  @default(now())
+  
+  // Relacionamento
+  user            CompanyUser @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("login_attempts")
+}
+
 // Modelo para controle de sessões ativas
 model ActiveSession {
   id              Int       @id @default(autoincrement())
@@ -73,6 +92,7 @@ model CompanyUser {
   activeSessions  ActiveSession[]
   securityAlerts  SecurityAlert[]
   acknowledgedAlerts SecurityAlert[] @relation("AcknowledgedAlerts")
+  loginAttempts   LoginAttempt[]
   createdUsers    CompanyUser[] @relation("UserCreator")
   createdBy       CompanyUser?  @relation("UserCreator", fields: [createdById], references: [id])
   createdById     Int?
@@ -285,6 +305,12 @@ enum AlertType {
   WARNING
   ERROR
   CRITICAL
+}
+
+enum LoginAttemptType {
+  NORMAL_LOGIN
+  CONCURRENT_SESSION_ATTEMPT
+  BLOCKED_ACCOUNT_ATTEMPT
 }
 
 enum SecurityAlertType {

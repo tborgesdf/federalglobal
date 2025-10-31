@@ -689,7 +689,7 @@ export default function AdminDashboard() {
                             <div className="mt-2 text-xs text-slate-400">
                               <p>Tipo: {alert.alertType}</p>
                               {typeof alert.details === 'object' && alert.details !== null && 'currentDevice' in alert.details && (
-                                <p>Dispositivo atual: {String((alert.details as any).currentDevice?.location || 'N/A')}</p>
+                                <p>Dispositivo atual: {String((alert.details as Record<string, any>).currentDevice?.location || 'N/A')}</p>
                               )}
                             </div>
                           )}

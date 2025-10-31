@@ -55,15 +55,6 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Determinar permissões baseado no domínio
-    let requiredRole: string[]
-
-    if (domainContext.isAdmin) {
-      requiredRole = ['ADMIN', 'SUPER_ADMIN']
-    } else {
-      requiredRole = ['USER', 'CLIENT']
-    }
-
     // Verificar credenciais no banco de dados
     let user = null
     
@@ -106,6 +97,43 @@ export async function POST(request: NextRequest) {
       { lat: gpsData.latitude, lng: gpsData.longitude }
     )
 
+    // Verificar tentativas de login recentes para este usuário
+    const recentAttempts = await prisma.loginAttempt.findFirst({
+      where: {
+        userId: user.id,
+        createdAt: {
+          gte: new Date(Date.now() - 24 * 60 * 60 * 1000) // Últimas 24 horas
+        }
+      },
+      orderBy: { createdAt: 'desc' }
+    })
+
+    // Verificar se a conta está bloqueada
+    if (recentAttempts?.blockedUntil && recentAttempts.blockedUntil > new Date()) {
+      const timeLeft = Math.ceil((recentAttempts.blockedUntil.getTime() - Date.now()) / (60 * 1000))
+      
+      // Registrar tentativa em conta bloqueada
+      await prisma.loginAttempt.create({
+        data: {
+          userId: user.id,
+          ipAddress: networkData.ipAddress,
+          userAgent: request.headers.get('user-agent') || '',
+          attemptType: 'BLOCKED_ACCOUNT_ATTEMPT',
+          successful: false
+        }
+      })
+
+      return NextResponse.json(
+        { 
+          error: 'Conta temporariamente bloqueada',
+          message: `Sua conta foi bloqueada devido a múltiplas tentativas de login simultâneo. Tente novamente em ${timeLeft} minutos ou procure o administrador do sistema.`,
+          blockedUntil: recentAttempts.blockedUntil,
+          contactAdmin: true
+        },
+        { status: 423 } // 423 Locked
+      )
+    }
+
     // Verificar se já existe uma sessão ativa para este usuário
     const existingSession = await prisma.activeSession.findFirst({
       where: {
@@ -119,12 +147,80 @@ export async function POST(request: NextRequest) {
 
     // Se existe sessão ativa em outro dispositivo
     if (existingSession) {
+      // Atualizar contador de tentativas consecutivas
+      const consecutiveFails = (recentAttempts?.consecutiveFails || 0) + 1
+      
+      // Criar registro de tentativa de login simultâneo
+      await prisma.loginAttempt.create({
+        data: {
+          userId: user.id,
+          ipAddress: networkData.ipAddress,
+          userAgent: request.headers.get('user-agent') || '',
+          attemptType: 'CONCURRENT_SESSION_ATTEMPT',
+          successful: false,
+          consecutiveFails: consecutiveFails,
+          lastFailedAt: new Date()
+        }
+      })
+
+      // Se já são 3 ou mais tentativas, bloquear a conta
+      if (consecutiveFails >= 3) {
+        const blockDuration = 30 * 60 * 1000 // 30 minutos
+        const blockedUntil = new Date(Date.now() + blockDuration)
+        
+        // Atualizar o registro de tentativas com o bloqueio
+        await prisma.loginAttempt.updateMany({
+          where: {
+            userId: user.id,
+            createdAt: {
+              gte: new Date(Date.now() - 24 * 60 * 60 * 1000)
+            }
+          },
+          data: {
+            blockedUntil: blockedUntil
+          }
+        })
+
+        // Criar alerta de bloqueio de conta
+        await prisma.securityAlert.create({
+          data: {
+            userId: user.id,
+            alertType: 'FAILED_LOGIN_ATTEMPTS',
+            message: `Conta de ${user.fullName} foi bloqueada após 3 tentativas de login simultâneo`,
+            details: JSON.stringify({
+              consecutiveAttempts: consecutiveFails,
+              blockedUntil: blockedUntil,
+              lastAttempt: {
+                ip: networkData.ipAddress,
+                userAgent: request.headers.get('user-agent'),
+                location: `${deviceData.deviceCity}, ${deviceData.deviceCountry}`
+              }
+            }),
+            severity: 'CRITICAL'
+          }
+        })
+
+        return NextResponse.json(
+          { 
+            error: 'Conta bloqueada por segurança',
+            message: 'Sua conta foi bloqueada após 3 tentativas de login simultâneo. Entre em contato com o administrador do sistema para desbloqueio.',
+            blocked: true,
+            contactAdmin: true,
+            blockedUntil: blockedUntil
+          },
+          { status: 423 }
+        )
+      }
+
+      // Primeira ou segunda tentativa - apenas avisar
+      const remainingAttempts = 3 - consecutiveFails
+      
       // Criar alerta de segurança
       await prisma.securityAlert.create({
         data: {
           userId: user.id,
           alertType: 'CONCURRENT_SESSION',
-          message: `Tentativa de login simultâneo detectada para ${user.fullName}`,
+          message: `Tentativa de login simultâneo detectada para ${user.fullName} (${consecutiveFails}ª tentativa)`,
           details: JSON.stringify({
             currentDevice: {
               ip: networkData.ipAddress,
@@ -135,20 +231,41 @@ export async function POST(request: NextRequest) {
               ip: existingSession.ipAddress,
               lastActivity: existingSession.lastActivity,
               sessionToken: existingSession.sessionToken.substring(0, 10) + '...'
-            }
+            },
+            attemptsRemaining: remainingAttempts
           }),
-          severity: 'HIGH'
+          severity: consecutiveFails >= 2 ? 'HIGH' : 'MEDIUM'
         }
       })
 
-      // Invalidar sessão anterior
-      await prisma.activeSession.update({
-        where: { id: existingSession.id },
-        data: { isActive: false }
-      })
-
-      console.log(`⚠️ Sessão simultânea detectada para usuário ${user.id}. Sessão anterior invalidada.`)
+      return NextResponse.json(
+        { 
+          error: 'Sessão ativa detectada',
+          message: `Você já está logado em outro dispositivo. Tentativa ${consecutiveFails} de 3. ${remainingAttempts} tentativas restantes antes do bloqueio.`,
+          concurrentSession: true,
+          attemptsRemaining: remainingAttempts,
+          existingDevice: {
+            ip: existingSession.ipAddress,
+            lastActivity: existingSession.lastActivity
+          }
+        },
+        { status: 409 } // 409 Conflict
+      )
     }
+
+    // Se chegou até aqui, resetar contador de tentativas falhadas
+    await prisma.loginAttempt.updateMany({
+      where: {
+        userId: user.id,
+        createdAt: {
+          gte: new Date(Date.now() - 24 * 60 * 60 * 1000)
+        }
+      },
+      data: {
+        consecutiveFails: 0,
+        blockedUntil: null
+      }
+    })
 
     // Capturar dados completos do acesso
     let accessLogId: number | null = null
