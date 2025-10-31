@@ -6,14 +6,14 @@ async function testarSistemaCompleto() {
   try {
     // 1. Teste de conectividade básica
     console.log('1. 🔍 Testando conectividade das APIs...');
-    const statusResponse = await fetch('https://federalglobal-q73ne07z8-thiago-borges-projects-3ed92125.vercel.app/api/status');
+    const statusResponse = await fetch('https://federalglobal-gpwan0ctv-thiago-borges-projects-3ed92125.vercel.app/api/status');
     const statusData = await statusResponse.json();
     console.log(`   ✅ API Status: ${statusResponse.status} - ${statusData.status}`);
     
     // 2. Teste do banco de dados
     console.log('');
     console.log('2. 🗄️ Testando conexão com banco de dados...');
-    const dbResponse = await fetch('https://federalglobal-q73ne07z8-thiago-borges-projects-3ed92125.vercel.app/api/db-test');
+    const dbResponse = await fetch('https://federalglobal-gpwan0ctv-thiago-borges-projects-3ed92125.vercel.app/api/db-test');
     const dbData = await dbResponse.json();
     
     if (dbData.success) {
@@ -42,7 +42,7 @@ async function testarSistemaCompleto() {
       }
     };
     
-    const loginResponse = await fetch('https://federalglobal-q73ne07z8-thiago-borges-projects-3ed92125.vercel.app/api/auth/domain-login', {
+    const loginResponse = await fetch('https://federalglobal-gpwan0ctv-thiago-borges-projects-3ed92125.vercel.app/api/auth/domain-login', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

@@ -52,8 +52,13 @@ export default function AdminLogin() {
       const result = await response.json()
 
       if (response.ok && result.success) {
-        // Login bem-sucedido - redirecionar para dashboard admin
-        router.push('/admin')
+        // Salvar dados do usuário no sessionStorage
+        sessionStorage.setItem('federal_global_user', JSON.stringify(result.data.user))
+        sessionStorage.setItem('federal_global_session', JSON.stringify(result.data.session))
+        
+        // Redirecionar conforme o tipo de usuário
+        const redirectTo = result.data.context.redirectTo
+        router.push(redirectTo)
       } else {
         setError(result.error || 'Erro no login')
       }
@@ -130,12 +135,6 @@ export default function AdminLogin() {
         </form>
 
         <div className="text-center space-y-2">
-          <div className="text-xs text-slate-400">
-            <p><strong>Credenciais de teste:</strong></p>
-            <p>CPF: 12345678901</p>
-            <p>Senha: SuperAdmin2024!</p>
-          </div>
-          
           <div className="text-xs text-slate-500 pt-4">
             Federal Global by DeltaFox Consultoria<br/>
             Sistema de Inteligência Avançada

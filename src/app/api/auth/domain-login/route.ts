@@ -155,7 +155,8 @@ export async function POST(request: NextRequest) {
         type: domainContext.type,
         isAdmin: domainContext.isAdmin,
         isClient: domainContext.isClient,
-        redirectTo: domainContext.isAdmin ? '/admin' : '/client/dashboard'
+        redirectTo: user.role === 'SUPER_ADMIN' ? '/admin/selection' : 
+                   domainContext.isAdmin ? '/admin' : '/client/dashboard'
       }
     }
 
