@@ -328,3 +328,61 @@ enum AlertSeverity {
   HIGH
   CRITICAL
 }
+
+enum ContactStatus {
+  PENDING
+  ANSWERED
+  CLOSED
+}
+
+// Modelo para usuários do sistema public (não empresa)
+model User {
+  id              Int      @id @default(autoincrement())
+  name            String
+  email           String   @unique
+  cpf             String   @unique
+  phone           String
+  birthDate       DateTime
+  password        String
+  role            CompanyRole @default(USER)
+  isActive        Boolean  @default(true)
+  emailVerified   Boolean  @default(false)
+  acceptedTerms   Boolean  @default(false)
+  termsAcceptedAt DateTime?
+  gpsLatitude     Decimal?  @db.Decimal(10, 8)
+  gpsLongitude    Decimal?  @db.Decimal(11, 8)
+  deviceInfo      String?  @db.Text // JSON com informações do dispositivo
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@map("users")
+}
+
+// Modelo para formulários de contato do hot site
+model ContactForm {
+  id              Int      @id @default(autoincrement())
+  name            String
+  email           String
+  message         String   @db.Text
+  deviceInfo      String?  @db.Text // JSON com informações do dispositivo
+  status          ContactStatus @default(PENDING)
+  response        String?  @db.Text
+  respondedAt     DateTime?
+  respondedBy     String?
+  createdAt       DateTime @default(now())
+
+  @@map("contact_forms")
+}
+
+// Modelo para sessões do chatbot
+model ChatSession {
+  id              Int      @id @default(autoincrement())
+  sessionId       String   @unique
+  userMessage     String   @db.Text
+  aiResponse      String   @db.Text
+  deviceInfo      String?  @db.Text // JSON com informações do dispositivo
+  timestamp       DateTime @default(now())
+  isActive        Boolean  @default(true)
+
+  @@map("chat_sessions")
+}

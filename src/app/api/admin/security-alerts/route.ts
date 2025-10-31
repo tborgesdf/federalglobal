@@ -38,6 +38,7 @@ export async function GET(request: NextRequest) {
         userId: alert.userId,
         alertType: alert.alertType,
         message: alert.message,
+        // @ts-ignore - Dynamic alert properties
         details: alert.details ? JSON.parse(alert.details) : null,
         severity: alert.severity,
         createdAt: alert.createdAt.toISOString(),

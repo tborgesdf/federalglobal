@@ -574,6 +574,48 @@ export default function AdminDashboard() {
               </div>
             </div>
           </div>
+
+          {/* Botões de Ação Rápida */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <button 
+              onClick={() => router.push('/admin/public-users')}
+              className="bg-gradient-to-r from-green-600 to-blue-600 hover:from-green-700 hover:to-blue-700 text-white p-6 rounded-lg text-left transition-all transform hover:scale-105"
+            >
+              <div className="flex items-center justify-between">
+                <div>
+                  <h4 className="text-lg font-bold">Painel de Clientes</h4>
+                  <p className="text-sm opacity-90">Visualizar usuários cadastrados</p>
+                </div>
+                <div className="text-3xl">👤</div>
+              </div>
+            </button>
+
+            <button 
+              onClick={() => router.push('/admin/users')}
+              className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white p-6 rounded-lg text-left transition-all transform hover:scale-105"
+            >
+              <div className="flex items-center justify-between">
+                <div>
+                  <h4 className="text-lg font-bold">Usuários Internos</h4>
+                  <p className="text-sm opacity-90">Gerenciar equipe interna</p>
+                </div>
+                <div className="text-3xl">👥</div>
+              </div>
+            </button>
+
+            <button 
+              onClick={() => setShowAlertsModal(true)}
+              className="bg-gradient-to-r from-orange-600 to-red-600 hover:from-orange-700 hover:to-red-700 text-white p-6 rounded-lg text-left transition-all transform hover:scale-105"
+            >
+              <div className="flex items-center justify-between">
+                <div>
+                  <h4 className="text-lg font-bold">Alertas de Segurança</h4>
+                  <p className="text-sm opacity-90">{securityAlerts.length} alertas pendentes</p>
+                </div>
+                <div className="text-3xl">⚠️</div>
+              </div>
+            </button>
+          </div>
         </div>
       )}
 
@@ -800,7 +842,7 @@ export default function AdminDashboard() {
                             <div className="mt-2 text-xs text-slate-400">
                               <p>Tipo: {alert.alertType}</p>
                               {typeof alert.details === 'object' && alert.details !== null && 'currentDevice' in alert.details && (
-                                <p>Dispositivo atual: {String((alert.details as Record<string, any>).currentDevice?.location || 'N/A')}</p>
+                                <p>Dispositivo atual: {String((alert.details as Record<string, { location?: string }>).currentDevice?.location || 'N/A')}</p>
                               )}
                             </div>
                           )}

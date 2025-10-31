@@ -114,7 +114,7 @@ export default function AdminUsersPage() {
     if (isAuthenticated) {
       loadUsers()
     }
-  }, [isAuthenticated])
+  }, [isAuthenticated, loadUsers])
 
   const loadUserDetails = async (userId: number) => {
     setLoadingUserDetails(true)

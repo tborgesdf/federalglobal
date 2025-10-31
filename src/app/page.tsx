@@ -1,18 +1,17 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useDomainContext } from '../lib/utils/domain';
 
 export default function Home() {
   const router = useRouter();
   const domainContext = useDomainContext();
-  const [showCanva, setShowCanva] = useState(false);
+  const showCanva = domainContext.hostname?.includes('federalglobal.deltafoxconsult.com.br') && !domainContext.isAdmin;
 
   useEffect(() => {
     // Se for o domínio principal federalglobal.deltafoxconsult.com.br, mostrar Canva
-    if (domainContext.hostname?.includes('federalglobal.deltafoxconsult.com.br') && !domainContext.isAdmin) {
-      setShowCanva(true);
+    if (showCanva) {
       return; // Não redirecionar, mostrar o conteúdo
     }
 
@@ -22,7 +21,7 @@ export default function Home() {
     } else if (domainContext.isClient || domainContext.isDevelopment) {
       router.push('/client');
     }
-  }, [router, domainContext]);
+  }, [router, domainContext, showCanva]);
 
   // Se deve mostrar o Canva (domínio principal)
   if (showCanva) {

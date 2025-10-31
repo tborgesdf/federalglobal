@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import DomainRouter from "@/components/DomainRouter";
+import SecurityProtection from "@/components/SecurityProtection";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -35,7 +36,9 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
-        <DomainRouter>{children}</DomainRouter>
+        <SecurityProtection enableInactivityTimeout={true} timeoutMinutes={15}>
+          <DomainRouter>{children}</DomainRouter>
+        </SecurityProtection>
       </body>
     </html>
   );

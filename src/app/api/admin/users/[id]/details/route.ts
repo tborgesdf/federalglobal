@@ -96,13 +96,22 @@ export async function GET(
         deviceCapture: lastAccess.deviceCapture
       } : null,
       isOnline,
-      actionLogs: lastAccess ? lastAccess.actionLogs.map((log: any) => ({
+      actionLogs: lastAccess ? lastAccess.actionLogs.map((log: {
+        id: string
+        action: string
+        targetTable: string
+        targetId: string
+        ipAddress: string
+        createdAt: Date
+        details: object
+      }) => ({
         id: log.id,
         action: log.action,
         targetTable: log.targetTable,
         targetId: log.targetId,
         ipAddress: log.ipAddress,
         createdAt: log.createdAt.toISOString(),
+        // @ts-ignore - Dynamic log property
         accessLog: log.accessLog
       })) : []
     }

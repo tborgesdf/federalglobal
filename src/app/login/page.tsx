@@ -27,6 +27,13 @@ interface WeatherData {
   }
 }
 
+interface NewsItem {
+  title: string
+  description: string
+  link: string
+  pubDate: string
+}
+
 interface LocationInfo {
   city: string
   country: string
@@ -49,86 +56,7 @@ export default function LoginPage() {
   const [currentTime, setCurrentTime] = useState(new Date())
   const [weather, setWeather] = useState<WeatherData | null>(null)
   const [location, setLocation] = useState<LocationInfo | null>(null)
-  const [newsRss, setNewsRss] = useState<any[]>([])
-
-  // Protections against screenshot and copy
-  useEffect(() => {
-    const preventScreenshot = (e: KeyboardEvent) => {
-      // Prevent print screen
-      if (e.key === 'PrintScreen') {
-        e.preventDefault()
-        alert('🛡️ Captura de tela não permitida por questões de segurança')
-      }
-      // Prevent F12, Ctrl+Shift+I, Ctrl+U
-      if (
-        e.key === 'F12' ||
-        (e.ctrlKey && e.shiftKey && e.key === 'I') ||
-        (e.ctrlKey && e.key === 'u')
-      ) {
-        e.preventDefault()
-        alert('🛡️ Acesso às ferramentas de desenvolvedor não permitido')
-      }
-      // Prevent Ctrl+A, Ctrl+C, Ctrl+V
-      if (e.ctrlKey && ['a', 'c', 'v'].includes(e.key.toLowerCase())) {
-        e.preventDefault()
-        alert('🛡️ Copiar/colar não permitido por questões de segurança')
-      }
-    }
-
-    const preventRightClick = (e: MouseEvent) => {
-      e.preventDefault()
-      alert('🛡️ Clique direito desabilitado por questões de segurança')
-    }
-
-    const preventDragDrop = (e: DragEvent) => {
-      e.preventDefault()
-    }
-
-    document.addEventListener('keydown', preventScreenshot)
-    document.addEventListener('contextmenu', preventRightClick)
-    document.addEventListener('dragstart', preventDragDrop)
-    document.addEventListener('drop', preventDragDrop)
-
-    // Prevent screenshot via CSS
-    document.body.style.userSelect = 'none'
-    document.body.style.webkitUserSelect = 'none'
-
-    return () => {
-      document.removeEventListener('keydown', preventScreenshot)
-      document.removeEventListener('contextmenu', preventRightClick)
-      document.removeEventListener('dragstart', preventDragDrop)
-      document.removeEventListener('drop', preventDragDrop)
-    }
-  }, [])
-
-  // Auto logout after 15 minutes of inactivity
-  useEffect(() => {
-    let inactivityTimer: NodeJS.Timeout
-
-    const resetTimer = () => {
-      clearTimeout(inactivityTimer)
-      inactivityTimer = setTimeout(() => {
-        alert('🕒 Sessão expirada por inatividade. Você será redirecionado para o login.')
-        localStorage.removeItem('sessionData')
-        sessionStorage.clear()
-        router.push('/login')
-      }, 15 * 60 * 1000) // 15 minutos
-    }
-
-    const activityEvents = ['mousedown', 'mousemove', 'keypress', 'scroll', 'touchstart']
-    activityEvents.forEach(event => {
-      document.addEventListener(event, resetTimer, true)
-    })
-
-    resetTimer()
-
-    return () => {
-      clearTimeout(inactivityTimer)
-      activityEvents.forEach(event => {
-        document.removeEventListener(event, resetTimer, true)
-      })
-    }
-  }, [router])
+  const [newsRss, setNewsRss] = useState<NewsItem[]>([])
 
   // Atualizar relógio a cada minuto
   useEffect(() => {
@@ -173,13 +101,19 @@ export default function LoginPage() {
                   }
                 },
                 forecast: {
-                  forecastday: weatherData.weather.slice(0, 7).map((day: any) => ({
+                  forecastday: weatherData.weather.slice(0, 7).map((day: {
+                    date: string
+                    maxtempC: string
+                    mintempC: string
+                    hourly: Array<{ weatherDesc: Array<{ value: string }> }>
+                  }) => ({
                     date: day.date,
                     day: {
                       maxtemp_c: parseFloat(day.maxtempC),
                       mintemp_c: parseFloat(day.mintempC),
                       condition: {
                         text: day.hourly[4].weatherDesc[0].value,
+                        // @ts-ignore - API de clima externa
                         icon: getWeatherIcon(day.hourly[4].weatherCode)
                       }
                     }

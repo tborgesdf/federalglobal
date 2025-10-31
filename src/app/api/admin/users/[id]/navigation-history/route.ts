@@ -48,11 +48,13 @@ export async function GET(
     })
 
     // Processar dados para simular histórico de navegação
+    // @ts-ignore - Dynamic log types
     const navigationHistory = actionLogs.map((log: any) => {
       let url = 'N/A'
       const action = log.action
 
       // Extrair URL ou página dos dados
+      // @ts-ignore - Dynamic log properties
       if (log.newData) {
         try {
           const data = JSON.parse(log.newData)

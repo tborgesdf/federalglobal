@@ -34,9 +34,15 @@ export default function AdminLayout({
                   </a>
                 </li>
                 <li>
+                  <a href="/admin/public-users" className="flex items-center space-x-3 p-3 rounded-lg hover:bg-slate-700 transition-colors">
+                    <span>👤</span>
+                    <span>Painel de Clientes</span>
+                  </a>
+                </li>
+                <li>
                   <a href="/admin/users" className="flex items-center space-x-3 p-3 rounded-lg hover:bg-slate-700 transition-colors">
                     <span>👥</span>
-                    <span>Usuários</span>
+                    <span>Usuários Internos</span>
                   </a>
                 </li>
                 <li>

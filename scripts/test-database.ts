@@ -24,7 +24,15 @@ async function testDatabaseConnection() {
     })
     
     console.log('📋 Usuários encontrados:')
-    users.forEach(user => {
+    users.forEach((user: {
+      id: string
+      fullName: string
+      cpf: string
+      email: string
+      role: string
+      protocolNumber: string
+      active: boolean
+    }) => {
       console.log(`   ID: ${user.id}`)
       console.log(`   Nome: ${user.fullName}`)
       console.log(`   CPF: ${user.cpf}`)
