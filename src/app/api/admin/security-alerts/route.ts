@@ -33,7 +33,7 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json({
       success: true,
-      alerts: alerts.map(alert => ({
+      alerts: alerts.map((alert: any) => ({
         id: alert.id,
         userId: alert.userId,
         alertType: alert.alertType,

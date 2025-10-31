@@ -96,7 +96,7 @@ export async function GET(
         deviceCapture: lastAccess.deviceCapture
       } : null,
       isOnline,
-      actionLogs: lastAccess ? lastAccess.actionLogs.map(log => ({
+      actionLogs: lastAccess ? lastAccess.actionLogs.map((log: any) => ({
         id: log.id,
         action: log.action,
         targetTable: log.targetTable,

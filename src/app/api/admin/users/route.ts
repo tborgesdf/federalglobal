@@ -41,7 +41,7 @@ export async function GET(request: NextRequest) {
     })
 
     // Processar dados para incluir status online e última conexão
-    const processedUsers = users.map(user => {
+    const processedUsers = users.map((user: any) => {
       const lastAccess = user.accessLogs[0]
       const isOnline = lastAccess ? 
         (new Date().getTime() - new Date(lastAccess.accessDateTime).getTime()) < 15 * 60 * 1000 : // 15 minutos

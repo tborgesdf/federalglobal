@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
+import Image from 'next/image'
 
 interface UserData {
   id: number
@@ -70,10 +71,6 @@ export default function AdminUsersPage() {
   const [showHistoryModal, setShowHistoryModal] = useState(false)
   const [loadingUserDetails, setLoadingUserDetails] = useState(false)
 
-  useEffect(() => {
-    loadUsers()
-  }, [])
-
   const loadUsers = async () => {
     try {
       const response = await fetch('/api/admin/users')
@@ -90,6 +87,10 @@ export default function AdminUsersPage() {
       setLoading(false)
     }
   }
+
+  useEffect(() => {
+    loadUsers()
+  }, [])
 
   const loadUserDetails = async (userId: number) => {
     setLoadingUserDetails(true)
@@ -234,7 +235,7 @@ export default function AdminUsersPage() {
                     <div className="flex items-center">
                       <div className="w-10 h-10 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full flex items-center justify-center mr-3">
                         {user.photo ? (
-                          <img src={user.photo} alt={user.fullName} className="w-10 h-10 rounded-full" />
+                          <Image src={user.photo} alt={user.fullName} width={40} height={40} className="w-10 h-10 rounded-full object-cover" />
                         ) : (
                           <span className="text-white font-bold">{user.fullName.charAt(0).toUpperCase()}</span>
                         )}
@@ -301,7 +302,7 @@ export default function AdminUsersPage() {
                   <div className="text-center mb-4">
                     <div className="w-20 h-20 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full flex items-center justify-center mx-auto mb-2">
                       {selectedUser.photo ? (
-                        <img src={selectedUser.photo} alt={selectedUser.fullName} className="w-20 h-20 rounded-full" />
+                        <Image src={selectedUser.photo} alt={selectedUser.fullName} width={80} height={80} className="w-20 h-20 rounded-full object-cover" />
                       ) : (
                         <span className="text-white font-bold text-2xl">{selectedUser.fullName.charAt(0).toUpperCase()}</span>
                       )}

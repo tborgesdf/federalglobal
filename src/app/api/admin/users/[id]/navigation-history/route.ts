@@ -48,16 +48,16 @@ export async function GET(
     })
 
     // Processar dados para simular histórico de navegação
-    const navigationHistory = actionLogs.map(log => {
+    const navigationHistory = actionLogs.map((log: any) => {
       let url = 'N/A'
-      let action = log.action
+      const action = log.action
 
       // Extrair URL ou página dos dados
       if (log.newData) {
         try {
           const data = JSON.parse(log.newData)
           url = data.url || data.page || data.route || 'N/A'
-        } catch (e) {
+        } catch {
           // Ignore parse errors
         }
       }
