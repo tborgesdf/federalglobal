@@ -2,7 +2,7 @@ console.log('🔍 Testando após mudanças de segurança...');
 
 // Teste 1: API Status
 console.log('1. Testando API Status...');
-fetch('https://federalglobal-nh8alxew8-thiago-borges-projects-3ed92125.vercel.app/api/status')
+fetch('https://federalglobal-23xbrpxf8-thiago-borges-projects-3ed92125.vercel.app/api/status')
 .then(response => {
   console.log('   Status API:', response.status);
   return response.json();
@@ -13,7 +13,7 @@ fetch('https://federalglobal-nh8alxew8-thiago-borges-projects-3ed92125.vercel.ap
   
   // Teste 2: API Hello
   console.log('2. Testando API Hello...');
-  return fetch('https://federalglobal-nh8alxew8-thiago-borges-projects-3ed92125.vercel.app/api/hello');
+  return fetch('https://federalglobal-23xbrpxf8-thiago-borges-projects-3ed92125.vercel.app/api/hello');
 })
 .then(response => {
   console.log('   Hello API:', response.status);
@@ -35,7 +35,7 @@ fetch('https://federalglobal-nh8alxew8-thiago-borges-projects-3ed92125.vercel.ap
     }
   };
   
-  return fetch('https://federalglobal-nh8alxew8-thiago-borges-projects-3ed92125.vercel.app/api/auth/domain-login', {
+  return fetch('https://federalglobal-23xbrpxf8-thiago-borges-projects-3ed92125.vercel.app/api/auth/domain-login', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
