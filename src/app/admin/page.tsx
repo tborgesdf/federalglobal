@@ -8,37 +8,157 @@ interface SystemStats {
   totalCompanies: number
   totalLogs: number
   onlineUsers: number
+  gpsAccuracy: number
+  systemUptime: string
+  securityLevel: string
 }
 
 interface ActivityItem {
   id: number
   action: string
   user: string
+  company?: string
   time: string
-  type: 'success' | 'warning' | 'info' | 'neutral'
+  type: 'success' | 'warning' | 'info' | 'error'
+  location?: string
+  ip?: string
+}
+
+interface User {
+  id: number
+  name: string
+  cpf: string
+  email: string
+  role: string
+  company: string
+  lastLogin: string
+  status: 'online' | 'offline' | 'blocked'
 }
 
 export default function AdminDashboard() {
   const router = useRouter()
   const [isAuthenticated, setIsAuthenticated] = useState(false)
   const [loading, setLoading] = useState(true)
+  const [activeTab, setActiveTab] = useState<'overview' | 'users' | 'activity' | 'system'>('overview')
   
-  const [stats] = useState<SystemStats>({
-    totalUsers: 156,
-    totalCompanies: 23,
-    totalLogs: 8432,
-    onlineUsers: 12
+  const [stats, setStats] = useState<SystemStats>({
+    totalUsers: 245,
+    totalCompanies: 48,
+    totalLogs: 15678,
+    onlineUsers: 23,
+    gpsAccuracy: 4.8,
+    systemUptime: '99.97%',
+    securityLevel: 'MÁXIMA'
   })
 
   const [recentActivity] = useState<ActivityItem[]>([
-    { id: 1, action: 'Login realizado', user: 'João Silva', time: '2 min atrás', type: 'success' },
-    { id: 2, action: 'Erro de GPS', user: 'Maria Santos', time: '5 min atrás', type: 'warning' },
-    { id: 3, action: 'Nova empresa cadastrada', user: 'Admin', time: '10 min atrás', type: 'info' },
-    { id: 4, action: 'Logout automático', user: 'Pedro Costa', time: '15 min atrás', type: 'neutral' }
+    { 
+      id: 1, 
+      action: 'Login realizado com sucesso', 
+      user: 'João Silva Santos', 
+      company: 'TechCorp LTDA',
+      time: '3 min atrás', 
+      type: 'success',
+      location: 'São Paulo, SP',
+      ip: '177.45.123.45'
+    },
+    { 
+      id: 2, 
+      action: 'Tentativa de acesso sem GPS', 
+      user: 'Maria Oliveira Costa', 
+      company: 'InnovaSys Serviços',
+      time: '7 min atrás', 
+      type: 'warning',
+      location: 'Rio de Janeiro, RJ',
+      ip: '201.23.156.78'
+    },
+    { 
+      id: 3, 
+      action: 'Nova empresa cadastrada', 
+      user: 'Sistema Automático', 
+      company: 'DeltaFox Solutions',
+      time: '15 min atrás', 
+      type: 'info',
+      location: 'Brasília, DF',
+      ip: 'Sistema'
+    },
+    { 
+      id: 4, 
+      action: 'Logout por inatividade', 
+      user: 'Pedro Costa Ferreira', 
+      company: 'Global Tech Industries',
+      time: '28 min atrás', 
+      type: 'info',
+      location: 'Belo Horizonte, MG',
+      ip: '186.67.89.123'
+    },
+    {
+      id: 5,
+      action: 'Bloqueio automático por localização suspeita',
+      user: 'Ana Clara Mendes',
+      company: 'SecureData Corp',
+      time: '1 hora atrás',
+      type: 'error',
+      location: 'Localização não autorizada',
+      ip: '192.168.1.100'
+    }
+  ])
+
+  const [topUsers] = useState<User[]>([
+    {
+      id: 1,
+      name: 'Thiago Borges',
+      cpf: '123.456.789-01',
+      email: 'thiago@deltafoxconsult.com.br',
+      role: 'SUPER_ADMIN',
+      company: 'DeltaFox Consultoria',
+      lastLogin: '2 min atrás',
+      status: 'online'
+    },
+    {
+      id: 2,
+      name: 'João Silva Santos',
+      cpf: '987.654.321-00',
+      email: 'joao.silva@techcorp.com.br',
+      role: 'ADMIN',
+      company: 'TechCorp LTDA',
+      lastLogin: '5 min atrás',
+      status: 'online'
+    },
+    {
+      id: 3,
+      name: 'Maria Oliveira Costa',
+      cpf: '456.789.123-45',
+      email: 'maria.costa@innovasys.com.br',
+      role: 'USER',
+      company: 'InnovaSys Serviços',
+      lastLogin: '1 hora atrás',
+      status: 'offline'
+    },
+    {
+      id: 4,
+      name: 'Pedro Costa Ferreira',
+      cpf: '789.123.456-78',
+      email: 'pedro.ferreira@globaltech.com.br',
+      role: 'USER',
+      company: 'Global Tech Industries',
+      lastLogin: '2 horas atrás',
+      status: 'offline'
+    },
+    {
+      id: 5,
+      name: 'Ana Clara Mendes',
+      cpf: '321.654.987-12',
+      email: 'ana.mendes@securedata.com.br',
+      role: 'USER',
+      company: 'SecureData Corp',
+      lastLogin: '1 dia atrás',
+      status: 'blocked'
+    }
   ])
 
   useEffect(() => {
-    // Verificar autenticação (simulado por cookies ou localStorage)
+    // Verificar autenticação
     const checkAuth = () => {
       try {
         const sessionToken = document.cookie
@@ -47,13 +167,22 @@ export default function AdminDashboard() {
           ?.split('=')[1];
 
         if (!sessionToken) {
-          // Não autenticado - redirecionar para login
           router.push('/admin/login')
           return
         }
 
-        // Verificar se é um token válido (simplificado)
         setIsAuthenticated(true)
+        
+        // Simular atualizações em tempo real
+        const interval = setInterval(() => {
+          setStats(prev => ({
+            ...prev,
+            onlineUsers: Math.floor(Math.random() * 10) + 20,
+            totalLogs: prev.totalLogs + Math.floor(Math.random() * 5)
+          }))
+        }, 10000)
+
+        return () => clearInterval(interval)
       } catch (error) {
         console.error('Erro ao verificar autenticação:', error)
         router.push('/admin/login')
@@ -64,6 +193,11 @@ export default function AdminDashboard() {
 
     checkAuth()
   }, [router])
+
+  const handleLogout = () => {
+    document.cookie = 'session_token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;'
+    router.push('/admin/login')
+  }
 
   if (loading) {
     return (
@@ -77,129 +211,323 @@ export default function AdminDashboard() {
   }
 
   if (!isAuthenticated) {
-    return null // O redirecionamento já foi feito
+    return null
   }
 
   return (
     <div className="space-y-6">
-      {/* Título */}
+      {/* Header com informações do usuário logado */}
       <div className="flex items-center justify-between">
-        <h1 className="text-3xl font-bold text-white">Dashboard Administrativo</h1>
-        <div className="text-sm text-slate-400">
-          📍 Acesso via: admin.federalglobal.deltafoxconsult.com.br
+        <div>
+          <h1 className="text-3xl font-bold text-white">Dashboard Administrativo</h1>
+          <p className="text-slate-400">Federal Global by DeltaFox - Sistema de Inteligência</p>
+        </div>
+        <div className="flex items-center space-x-4">
+          <div className="text-right">
+            <p className="text-sm text-white">Thiago Borges</p>
+            <p className="text-xs text-green-400">Super Administrador</p>
+          </div>
+          <button 
+            onClick={handleLogout}
+            className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg text-sm transition-colors"
+          >
+            Sair
+          </button>
         </div>
       </div>
 
-      {/* Cards de Estatísticas */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <div className="bg-slate-800 p-6 rounded-lg border border-slate-700">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-slate-400 text-sm">Total de Usuários</p>
-              <p className="text-3xl font-bold text-blue-400">{stats.totalUsers}</p>
-            </div>
-            <div className="text-blue-400 text-3xl">👥</div>
-          </div>
-        </div>
-
-        <div className="bg-slate-800 p-6 rounded-lg border border-slate-700">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-slate-400 text-sm">Empresas Ativas</p>
-              <p className="text-3xl font-bold text-green-400">{stats.totalCompanies}</p>
-            </div>
-            <div className="text-green-400 text-3xl">🏢</div>
-          </div>
-        </div>
-
-        <div className="bg-slate-800 p-6 rounded-lg border border-slate-700">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-slate-400 text-sm">Logs Registrados</p>
-              <p className="text-3xl font-bold text-yellow-400">{stats.totalLogs}</p>
-            </div>
-            <div className="text-yellow-400 text-3xl">📋</div>
-          </div>
-        </div>
-
-        <div className="bg-slate-800 p-6 rounded-lg border border-slate-700">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-slate-400 text-sm">Usuários Online</p>
-              <p className="text-3xl font-bold text-purple-400">{stats.onlineUsers}</p>
-            </div>
-            <div className="text-purple-400 text-3xl">🟢</div>
-          </div>
-        </div>
+      {/* Abas de navegação */}
+      <div className="border-b border-slate-700">
+        <nav className="flex space-x-8">
+          {[
+            { id: 'overview', label: 'Visão Geral', icon: '📊' },
+            { id: 'users', label: 'Usuários', icon: '👥' },
+            { id: 'activity', label: 'Atividades', icon: '📋' },
+            { id: 'system', label: 'Sistema', icon: '⚙️' }
+          ].map((tab) => (
+            <button
+              key={tab.id}
+              onClick={() => setActiveTab(tab.id as 'overview' | 'users' | 'activity' | 'system')}
+              className={`py-2 px-1 border-b-2 font-medium text-sm transition-colors ${
+                activeTab === tab.id
+                  ? 'border-blue-500 text-blue-400'
+                  : 'border-transparent text-slate-400 hover:text-slate-300'
+              }`}
+            >
+              {tab.icon} {tab.label}
+            </button>
+          ))}
+        </nav>
       </div>
 
-      {/* Atividade Recente */}
-      <div className="bg-slate-800 rounded-lg border border-slate-700">
-        <div className="p-6 border-b border-slate-700">
-          <h2 className="text-xl font-bold text-white">Atividade Recente</h2>
-        </div>
-        <div className="p-6">
-          <div className="space-y-4">
-            {recentActivity.map((activity) => (
-              <div key={activity.id} className="flex items-center justify-between py-3 border-b border-slate-700 last:border-b-0">
-                <div className="flex items-center space-x-3">
-                  <div className={`w-3 h-3 rounded-full ${
-                    activity.type === 'success' ? 'bg-green-400' :
-                    activity.type === 'warning' ? 'bg-yellow-400' :
-                    activity.type === 'info' ? 'bg-blue-400' : 'bg-slate-400'
-                  }`}></div>
-                  <div>
-                    <p className="text-white font-medium">{activity.action}</p>
-                    <p className="text-slate-400 text-sm">por {activity.user}</p>
-                  </div>
+      {/* Conteúdo das abas */}
+      {activeTab === 'overview' && (
+        <div className="space-y-6">
+          {/* Cards de Estatísticas */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            <div className="bg-slate-800 p-6 rounded-lg border border-slate-700">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-slate-400 text-sm">Usuários Totais</p>
+                  <p className="text-3xl font-bold text-blue-400">{stats.totalUsers}</p>
+                  <p className="text-xs text-green-400">+12 este mês</p>
                 </div>
-                <div className="text-slate-400 text-sm">
-                  {activity.time}
+                <div className="text-blue-400 text-3xl">👥</div>
+              </div>
+            </div>
+
+            <div className="bg-slate-800 p-6 rounded-lg border border-slate-700">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-slate-400 text-sm">Empresas Ativas</p>
+                  <p className="text-3xl font-bold text-green-400">{stats.totalCompanies}</p>
+                  <p className="text-xs text-green-400">+3 este mês</p>
+                </div>
+                <div className="text-green-400 text-3xl">🏢</div>
+              </div>
+            </div>
+
+            <div className="bg-slate-800 p-6 rounded-lg border border-slate-700">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-slate-400 text-sm">Logs Registrados</p>
+                  <p className="text-3xl font-bold text-yellow-400">{stats.totalLogs.toLocaleString()}</p>
+                  <p className="text-xs text-yellow-400">Tempo real</p>
+                </div>
+                <div className="text-yellow-400 text-3xl">📋</div>
+              </div>
+            </div>
+
+            <div className="bg-slate-800 p-6 rounded-lg border border-slate-700">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-slate-400 text-sm">Usuários Online</p>
+                  <p className="text-3xl font-bold text-purple-400">{stats.onlineUsers}</p>
+                  <p className="text-xs text-purple-400">Agora</p>
+                </div>
+                <div className="text-purple-400 text-3xl">🟢</div>
+              </div>
+            </div>
+          </div>
+
+          {/* Status do Sistema */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <div className="bg-slate-800 p-6 rounded-lg border border-slate-700">
+              <h3 className="text-lg font-bold text-white mb-4">Status do Sistema</h3>
+              <div className="space-y-3">
+                <div className="flex justify-between items-center">
+                  <span className="text-slate-400">Uptime</span>
+                  <span className="text-green-400 font-medium">{stats.systemUptime}</span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-slate-400">GPS Precisão Média</span>
+                  <span className="text-blue-400 font-medium">±{stats.gpsAccuracy}m</span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-slate-400">Nível de Segurança</span>
+                  <span className="text-red-400 font-medium">{stats.securityLevel}</span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-slate-400">Criptografia</span>
+                  <span className="text-green-400 font-medium">✅ AES-256</span>
                 </div>
               </div>
-            ))}
-          </div>
-        </div>
-      </div>
+            </div>
 
-      {/* Gráficos e Métricas */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <div className="bg-slate-800 p-6 rounded-lg border border-slate-700">
-          <h3 className="text-lg font-bold text-white mb-4">Sistema de GPS</h3>
-          <div className="space-y-3">
-            <div className="flex justify-between">
-              <span className="text-slate-400">GPS Ativo</span>
-              <span className="text-green-400">✅ Funcionando</span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-slate-400">Precisão Média</span>
-              <span className="text-blue-400">5.2m</span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-slate-400">Usuários com GPS</span>
-              <span className="text-yellow-400">98.7%</span>
+            <div className="bg-slate-800 p-6 rounded-lg border border-slate-700">
+              <h3 className="text-lg font-bold text-white mb-4">Atividade Recente</h3>
+              <div className="space-y-3 max-h-64 overflow-y-auto">
+                {recentActivity.slice(0, 5).map((activity) => (
+                  <div key={activity.id} className="flex items-start space-x-3 p-2 hover:bg-slate-700 rounded">
+                    <div className={`w-2 h-2 rounded-full mt-2 ${
+                      activity.type === 'success' ? 'bg-green-400' :
+                      activity.type === 'warning' ? 'bg-yellow-400' :
+                      activity.type === 'error' ? 'bg-red-400' : 'bg-blue-400'
+                    }`}></div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-white text-sm font-medium">{activity.action}</p>
+                      <p className="text-slate-400 text-xs">{activity.user} - {activity.company}</p>
+                      <p className="text-slate-500 text-xs">{activity.time} • {activity.location}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
             </div>
           </div>
         </div>
+      )}
 
-        <div className="bg-slate-800 p-6 rounded-lg border border-slate-700">
-          <h3 className="text-lg font-bold text-white mb-4">Segurança</h3>
-          <div className="space-y-3">
-            <div className="flex justify-between">
-              <span className="text-slate-400">Tentativas de Login</span>
-              <span className="text-green-400">234 (sucesso)</span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-slate-400">Bloqueios por GPS</span>
-              <span className="text-red-400">12 (hoje)</span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-slate-400">Criptografia</span>
-              <span className="text-green-400">✅ AES-256</span>
+      {activeTab === 'users' && (
+        <div className="space-y-6">
+          <div className="flex items-center justify-between">
+            <h2 className="text-xl font-bold text-white">Gestão de Usuários</h2>
+            <button className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm">
+              + Novo Usuário
+            </button>
+          </div>
+
+          <div className="bg-slate-800 rounded-lg border border-slate-700 overflow-hidden">
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <thead className="bg-slate-700">
+                  <tr>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-slate-300 uppercase tracking-wider">Usuário</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-slate-300 uppercase tracking-wider">Empresa</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-slate-300 uppercase tracking-wider">Role</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-slate-300 uppercase tracking-wider">Último Login</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-slate-300 uppercase tracking-wider">Status</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-slate-300 uppercase tracking-wider">Ações</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-700">
+                  {topUsers.map((user) => (
+                    <tr key={user.id} className="hover:bg-slate-700">
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div>
+                          <div className="text-sm font-medium text-white">{user.name}</div>
+                          <div className="text-sm text-slate-400">{user.email}</div>
+                          <div className="text-xs text-slate-500">{user.cpf}</div>
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-300">
+                        {user.company}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <span className={`px-2 py-1 text-xs rounded-full ${
+                          user.role === 'SUPER_ADMIN' ? 'bg-red-900 text-red-400' :
+                          user.role === 'ADMIN' ? 'bg-blue-900 text-blue-400' :
+                          'bg-gray-900 text-gray-400'
+                        }`}>
+                          {user.role}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-300">
+                        {user.lastLogin}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <span className={`px-2 py-1 text-xs rounded-full ${
+                          user.status === 'online' ? 'bg-green-900 text-green-400' :
+                          user.status === 'offline' ? 'bg-gray-900 text-gray-400' :
+                          'bg-red-900 text-red-400'
+                        }`}>
+                          {user.status === 'online' ? '🟢 Online' :
+                           user.status === 'offline' ? '⚫ Offline' : '🔴 Bloqueado'}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium space-x-2">
+                        <button className="text-blue-400 hover:text-blue-300">Editar</button>
+                        <button className="text-red-400 hover:text-red-300">Bloquear</button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             </div>
           </div>
         </div>
-      </div>
+      )}
+
+      {activeTab === 'activity' && (
+        <div className="space-y-6">
+          <h2 className="text-xl font-bold text-white">Log de Atividades</h2>
+          
+          <div className="bg-slate-800 rounded-lg border border-slate-700">
+            <div className="p-6">
+              <div className="space-y-4">
+                {recentActivity.map((activity) => (
+                  <div key={activity.id} className="border-b border-slate-700 pb-4 last:border-b-0">
+                    <div className="flex items-start justify-between">
+                      <div className="flex items-start space-x-3">
+                        <div className={`w-3 h-3 rounded-full mt-1 ${
+                          activity.type === 'success' ? 'bg-green-400' :
+                          activity.type === 'warning' ? 'bg-yellow-400' :
+                          activity.type === 'error' ? 'bg-red-400' : 'bg-blue-400'
+                        }`}></div>
+                        <div>
+                          <p className="text-white font-medium">{activity.action}</p>
+                          <p className="text-slate-400 text-sm">{activity.user}</p>
+                          {activity.company && (
+                            <p className="text-slate-500 text-sm">{activity.company}</p>
+                          )}
+                          <div className="flex items-center space-x-4 mt-1">
+                            <span className="text-slate-500 text-xs">{activity.time}</span>
+                            {activity.location && (
+                              <span className="text-slate-500 text-xs">📍 {activity.location}</span>
+                            )}
+                            {activity.ip && activity.ip !== 'Sistema' && (
+                              <span className="text-slate-500 text-xs">🌐 {activity.ip}</span>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                      <div className={`px-2 py-1 text-xs rounded ${
+                        activity.type === 'success' ? 'bg-green-900 text-green-400' :
+                        activity.type === 'warning' ? 'bg-yellow-900 text-yellow-400' :
+                        activity.type === 'error' ? 'bg-red-900 text-red-400' :
+                        'bg-blue-900 text-blue-400'
+                      }`}>
+                        {activity.type.toUpperCase()}
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {activeTab === 'system' && (
+        <div className="space-y-6">
+          <h2 className="text-xl font-bold text-white">Configurações do Sistema</h2>
+          
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <div className="bg-slate-800 p-6 rounded-lg border border-slate-700">
+              <h3 className="text-lg font-bold text-white mb-4">Configurações de Segurança</h3>
+              <div className="space-y-4">
+                <div className="flex justify-between items-center">
+                  <span className="text-slate-300">GPS Obrigatório</span>
+                  <span className="text-green-400">✅ Ativo</span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-slate-300">Criptografia AES-256</span>
+                  <span className="text-green-400">✅ Ativo</span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-slate-300">Log de Auditoria</span>
+                  <span className="text-green-400">✅ Ativo</span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-slate-300">Backup Automático</span>
+                  <span className="text-green-400">✅ Diário</span>
+                </div>
+              </div>
+            </div>
+
+            <div className="bg-slate-800 p-6 rounded-lg border border-slate-700">
+              <h3 className="text-lg font-bold text-white mb-4">Informações do Servidor</h3>
+              <div className="space-y-4">
+                <div className="flex justify-between items-center">
+                  <span className="text-slate-300">Versão do Sistema</span>
+                  <span className="text-blue-400">v2.0.1</span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-slate-300">Banco de Dados</span>
+                  <span className="text-green-400">MySQL 8.0</span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-slate-300">Servidor</span>
+                  <span className="text-blue-400">Vercel</span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-slate-300">Última Atualização</span>
+                  <span className="text-slate-400">30/10/2025</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
