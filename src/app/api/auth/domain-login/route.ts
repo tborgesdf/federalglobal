@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getDomainContext } from '../../../../lib/utils/domain'
 import { logAction } from '../../../../lib/utils/logger'
+import { CompanyUserService } from '@/lib/services/companyUserService'
 
 interface LoginRequest {
   cpf: string
@@ -51,44 +52,37 @@ export async function POST(request: NextRequest) {
     let requiredRole: string[]
 
     if (domainContext.isAdmin) {
-      requiredRole = ['admin', 'super_admin']
+      requiredRole = ['ADMIN', 'SUPER_ADMIN']
     } else {
-      requiredRole = ['user', 'client', 'employee']
+      requiredRole = ['USER', 'CLIENT']
     }
 
-    // Verificar credenciais de fallback para desenvolvimento
-    const fallbackCredentials = {
-      cpf: '12345678901',
-      password: 'SuperAdmin2024!',
-      role: 'super_admin'
-    }
-
+    // Verificar credenciais no banco de dados
     let user = null
-    let isValidPassword = false
-
-    // Verificar credenciais de fallback
-    if (cleanCpf === fallbackCredentials.cpf) {
-      isValidPassword = password === fallbackCredentials.password
-      if (isValidPassword) {
-        user = {
-          id: 1,
+    
+    try {
+      user = await CompanyUserService.verifyLogin(cleanCpf, password)
+    } catch (error) {
+      console.error('Erro ao verificar login:', error)
+      
+      await logAction({
+        action: 'login_failed',
+        details: { 
           cpf: cleanCpf,
-          name: 'Super Administrador',
-          email: 'admin@deltafoxconsult.com.br',
-          role: fallbackCredentials.role,
-          company_id: null,
-          is_active: true
-        }
-      }
+          domain: domainContext.hostname,
+          type: domainContext.type,
+          reason: 'database_error'
+        },
+        status: 'error'
+      })
+
+      return NextResponse.json(
+        { error: 'Erro de conexão com o banco de dados' },
+        { status: 500 }
+      )
     }
 
-    // TODO: Implementar busca real no banco de dados
-    // const user = await prisma.user.findUnique({
-    //   where: { cpf: cleanCpf },
-    //   include: { company: true }
-    // })
-
-    if (!user || !isValidPassword) {
+    if (!user) {
       await logAction({
         action: 'login_failed',
         details: { 
@@ -107,7 +101,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Verificar se o usuário tem permissão para acessar este domínio
-    if (domainContext.isAdmin && !['admin', 'super_admin'].includes(user.role)) {
+    if (domainContext.isAdmin && !['ADMIN', 'SUPER_ADMIN'].includes(user.role)) {
       await logAction({
         action: 'login_blocked_insufficient_role',
         details: { 
@@ -130,7 +124,7 @@ export async function POST(request: NextRequest) {
     const loginData = {
       user: {
         id: user.id,
-        name: user.name,
+        name: user.fullName,
         email: user.email,
         role: user.role,
         cpf: cleanCpf
