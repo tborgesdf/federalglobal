@@ -1,4 +1,5 @@
 import CryptoJS from 'crypto-js';
+import bcrypt from 'bcryptjs';
 
 const SECRET_KEY = process.env.ENCRYPTION_SECRET || 'federal_global_secret_2024';
 
@@ -14,14 +15,14 @@ export class SecurityUtils {
     return bytes.toString(CryptoJS.enc.Utf8);
   }
 
-  // Hash de senha
+  // Hash de senha com bcrypt
   static hashPassword(password: string): string {
-    return CryptoJS.SHA256(password + SECRET_KEY).toString();
+    return bcrypt.hashSync(password, 12);
   }
 
-  // Verificar senha
-  static verifyPassword(password: string, hash: string): boolean {
-    return this.hashPassword(password) === hash;
+  // Verificar senha com bcrypt
+  static async verifyPassword(password: string, hash: string): Promise<boolean> {
+    return await bcrypt.compare(password, hash);
   }
 
   // Validar CPF

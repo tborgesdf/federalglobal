@@ -163,7 +163,7 @@ export class CompanyUserService {
         return null;
       }
 
-      const isPasswordValid = SecurityUtils.verifyPassword(password, user.password);
+      const isPasswordValid = await SecurityUtils.verifyPassword(password, user.password);
       
       if (!isPasswordValid) {
         return null;
