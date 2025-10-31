@@ -29,6 +29,13 @@ export async function POST(request: NextRequest) {
 
     // Limpar formatação do CPF
     const cleanCpf = cpf.replace(/\D/g, '')
+    
+    console.log('🔍 Debug Login:')
+    console.log(`   CPF original: ${cpf}`)
+    console.log(`   CPF limpo: ${cleanCpf}`)
+    console.log(`   Senha: ${password}`)
+    console.log(`   Domain: ${domainContext.hostname}`)
+    console.log(`   IsAdmin: ${domainContext.isAdmin}`)
 
     // Validar GPS (obrigatório)
     if (!gpsData || !gpsData.latitude || !gpsData.longitude) {
@@ -61,9 +68,16 @@ export async function POST(request: NextRequest) {
     let user = null
     
     try {
+      console.log(`🔍 Tentando login no banco com CPF: ${cleanCpf}`)
       user = await CompanyUserService.verifyLogin(cleanCpf, password)
+      console.log(`🔍 Resultado da verificação: ${user ? 'USUÁRIO ENCONTRADO' : 'USUÁRIO NÃO ENCONTRADO'}`)
+      if (user) {
+        console.log(`   Nome: ${user.fullName}`)
+        console.log(`   Role: ${user.role}`)
+        console.log(`   Email: ${user.email}`)
+      }
     } catch (error) {
-      console.error('Erro ao verificar login:', error)
+      console.error('❌ Erro ao verificar login:', error)
       
       await logAction({
         action: 'login_failed',
