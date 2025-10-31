@@ -1,0 +1,7 @@
+{
+  "version": "2025-10-31-v2",
+  "build": {
+    "force": true
+  },
+  "cache": false
+}

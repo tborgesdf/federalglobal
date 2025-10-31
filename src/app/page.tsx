@@ -1,5 +1,6 @@
 'use client';
 
+// Updated: 2025-10-31 - Force deployment
 import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useDomainContext } from '../lib/utils/domain';
