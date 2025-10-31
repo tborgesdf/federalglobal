@@ -70,13 +70,35 @@ export default function AdminUsersPage() {
   const [showModal, setShowModal] = useState(false)
   const [showHistoryModal, setShowHistoryModal] = useState(false)
   const [loadingUserDetails, setLoadingUserDetails] = useState(false)
+  const [isAuthenticated, setIsAuthenticated] = useState(false)
+
+  // Verificação de autenticação
+  useEffect(() => {
+    const checkAuth = () => {
+      const sessionToken = document.cookie
+        .split('; ')
+        .find(row => row.startsWith('session_token='))
+        ?.split('=')[1];
+      
+      if (!sessionToken) {
+        router.push('/login')
+        return
+      }
+      
+      setIsAuthenticated(true)
+    }
+
+    checkAuth()
+  }, [router])
 
   const loadUsers = async () => {
+    if (!isAuthenticated) return
+    
     try {
       const response = await fetch('/api/admin/users')
       if (response.ok) {
         const data = await response.json()
-        setUsers(data.users)
+        setUsers(data.users || [])
       } else {
         console.error('Erro ao carregar usuários')
         router.push('/admin')
@@ -89,8 +111,10 @@ export default function AdminUsersPage() {
   }
 
   useEffect(() => {
-    loadUsers()
-  }, [])
+    if (isAuthenticated) {
+      loadUsers()
+    }
+  }, [isAuthenticated])
 
   const loadUserDetails = async (userId: number) => {
     setLoadingUserDetails(true)

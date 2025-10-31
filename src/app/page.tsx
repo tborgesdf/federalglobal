@@ -16,9 +16,9 @@ export default function Home() {
       return; // Não redirecionar, mostrar o conteúdo
     }
 
-    // Para outros domínios, redirecionar como antes
+    // Para domínios admin, redirecionar para login direto
     if (domainContext.isAdmin) {
-      router.push('/admin');
+      router.push('/login');
     } else if (domainContext.isClient || domainContext.isDevelopment) {
       router.push('/client');
     }
