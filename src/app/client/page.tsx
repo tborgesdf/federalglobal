@@ -119,6 +119,85 @@ export default function ClientHome() {
         </div>
       </section>
 
+      {/* Portal Federal Global - Canva Integration */}
+      <section className="py-20 bg-gradient-to-br from-blue-900/30 to-purple-900/30 backdrop-blur-sm">
+        <div className="container mx-auto px-4">
+          <div className="text-center mb-12">
+            <h3 className="text-4xl font-bold text-white mb-4">
+              🚀 Portal Federal Global
+            </h3>
+            <p className="text-blue-200 text-lg max-w-3xl mx-auto">
+              Acesse nosso portal completo com todas as funcionalidades, serviços e informações sobre 
+              nossos processos de inteligência e monitoramento avançado.
+            </p>
+          </div>
+
+          {/* Canva Embed Container */}
+          <div className="max-w-6xl mx-auto">
+            <div 
+              style={{
+                position: 'relative',
+                width: '100%',
+                height: 0,
+                paddingTop: '112.4451%',
+                paddingBottom: 0,
+                boxShadow: '0 4px 20px 0 rgba(59, 130, 246, 0.3)',
+                marginTop: '1.6em',
+                marginBottom: '0.9em',
+                overflow: 'hidden',
+                borderRadius: '12px',
+                willChange: 'transform',
+                border: '2px solid rgba(59, 130, 246, 0.2)'
+              }}
+            >
+              <iframe 
+                loading="lazy" 
+                style={{
+                  position: 'absolute',
+                  width: '100%',
+                  height: '100%',
+                  top: 0,
+                  left: 0,
+                  border: 'none',
+                  padding: 0,
+                  margin: 0
+                }}
+                src="https://www.canva.com/design/DAG3TnNbMUY/1MD8MlYR5xIR3PR_p-Pa8w/view?embed" 
+                allowFullScreen 
+                allow="fullscreen"
+                title="Portal Federal Global - Interface Principal"
+              />
+            </div>
+            
+            {/* Portal Info and Link */}
+            <div className="text-center mt-6">
+              <p className="text-blue-300 mb-4">
+                🎨 Interface criada por <strong>Thiago Borges</strong> - Design Federal Global
+              </p>
+              <div className="flex flex-col sm:flex-row items-center justify-center space-y-4 sm:space-y-0 sm:space-x-6">
+                <a 
+                  href="https://www.canva.com/design/DAG3TnNbMUY/1MD8MlYR5xIR3PR_p-Pa8w/view?utm_content=DAG3TnNbMUY&utm_campaign=designshare&utm_medium=embeds&utm_source=link" 
+                  target="_blank" 
+                  rel="noopener"
+                  className="inline-flex items-center px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-semibold transition-all duration-300 transform hover:scale-105"
+                >
+                  🌐 Ver Página Principal Completa
+                  <svg className="w-4 h-4 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                  </svg>
+                </a>
+                <button 
+                  onClick={() => setShowLoginModal(true)}
+                  className="inline-flex items-center px-6 py-3 border-2 border-green-500 text-green-400 hover:bg-green-500/10 rounded-lg font-semibold transition-all duration-300"
+                >
+                  🔐 Fazer Login no Sistema
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
       {/* Benefits Section */}
       <section className="py-20">
         <div className="container mx-auto px-4">
